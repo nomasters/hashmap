@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -17,10 +17,12 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("no args given. must use gen-key|gen-payload")
+		log.Fatal("no args given. must use analyze|gen-key|gen-payload")
 	}
 	arg := os.Args[1]
 	switch arg {
+	case "analyze":
+		analyze()
 	case "gen-key":
 		genKey()
 	case "gen-payload":
@@ -28,6 +30,85 @@ func main() {
 	default:
 		log.Fatal("invalid arg")
 	}
+}
+
+func analyze() {
+	input, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	p := hashmap.Payload{}
+	if err := json.Unmarshal(input, &p); err != nil {
+		log.Fatalf("invalid payload: %v\n", err)
+	}
+
+	// Outputs Payload as Indented JSON string
+	fmt.Println("\nPayload\n-------\n")
+	payload, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(payload))
+
+	// Outputs Message as Indented JSON string
+	fmt.Println("\nMessage\n-------\n")
+	m, err := p.GetMessage()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	message, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(message))
+
+	// Outputs Data as string
+	fmt.Println("\nData\n----\n")
+	data, err := m.DataBytes()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(data))
+
+	fmt.Println("\nChecker\n-------\n")
+
+	fmt.Println("Verify Payload      : " + verifyChecker(p))
+	fmt.Println("Validate TTL        : " + ttlChecker(*m))
+	fmt.Println("Validate Timestamp  : " + timeStampChecker(*m))
+	fmt.Println("Validate Data Size  : " + dataSizeChecker(*m))
+}
+
+func verifyChecker(p hashmap.Payload) string {
+	status := "PASS"
+	if err := p.Verify(); err != nil {
+		status = "FAIL - " + err.Error()
+	}
+	return status
+}
+
+func ttlChecker(m hashmap.Message) string {
+	status := "PASS"
+	if err := m.ValidateTTL(); err != nil {
+		status = "FAIL - " + err.Error()
+	}
+	return status
+}
+
+func timeStampChecker(m hashmap.Message) string {
+	status := "PASS"
+	if err := m.ValidateTimeStamp(); err != nil {
+		status = "FAIL - " + err.Error()
+	}
+	return status
+}
+
+func dataSizeChecker(m hashmap.Message) string {
+	status := "PASS"
+	if err := m.ValidateDataSize(); err != nil {
+		status = "FAIL - " + err.Error()
+	}
+	return status
 }
 
 func genPayload() {
@@ -53,9 +134,11 @@ func genPayload() {
 	}
 
 	// sign this Mashalled message with the PrivKey
-	reader := bufio.NewReader(os.Stdin)
-	text, _ := reader.ReadString('\n')
-	pk, err := base64.StdEncoding.DecodeString(text)
+	text, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pk, err := base64.StdEncoding.DecodeString(string(text))
 	if err != nil {
 		log.Fatal(err)
 	}
