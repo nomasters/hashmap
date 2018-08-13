@@ -40,12 +40,15 @@ func init() {
 	hc = NewHashCache()
 }
 
+// Payload is the primary wrapper struct for HashMap Values and submissions
 type Payload struct {
 	Message   string `json:"message"`
 	Signature string `json:"sig"`
 	PublicKey string `json:"pubkey"`
 }
 
+// Message is the struct for the Message in a Payload. It contains all data that is
+// signed by the Payload Pubkey
 type Message struct {
 	Data      string `json:"data"`
 	Timestamp int64  `json:"timestamp"`
@@ -54,10 +57,14 @@ type Message struct {
 	Version   string `json:"version"`
 }
 
+// Validator is an interface that takes a Validate method.
+// each supported `sigMethod` will have a corresponding
+// Validator for the payload
 type Validator interface {
 	Validate() error
 }
 
+// NaClSignEd25519 is the struct used by the Validator for the sigMethod: `nacl-sign-ed25519`
 type NaClSignEd25519 struct {
 	SignedMessage []byte
 	PublicKey     *[32]byte
@@ -84,17 +91,21 @@ func (n NaClSignEd25519) Validate() error {
 	return nil
 }
 
+// Run Options for the hashMap server
 type Options struct {
 	Port string
 }
 
+// Run takes an Options struct and a server running on a specified port
+// TODO: add TLS support
+// TODO: add middleware such as rate limiting and logging
 func Run(opts Options) {
 	if opts.Port == "" {
 		opts.Port = DefaultPort
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.Timeout(ServerTimeout))
-	r.Post("/", SubmitHandleFunc)
+	r.Post("/", submitHandleFunc)
 	r.Route("/{pkHash}", func(r chi.Router) {
 		r.Use(pkHashCtx)
 		r.Get("/", getPayloadHandleFunc)
@@ -171,6 +182,7 @@ func (p Payload) NewValidator() (Validator, error) {
 
 }
 
+// PubKeyBytes method decodes a Payload.PublicKey and returns a slice of bytes and an error
 func (p Payload) PubKeyBytes() ([]byte, error) {
 	pubKey, err := base64.StdEncoding.DecodeString(p.PublicKey)
 	if err != nil {
@@ -180,6 +192,7 @@ func (p Payload) PubKeyBytes() ([]byte, error) {
 	return pubKey, nil
 }
 
+// SignatureBytes method decodes a Payload.Signature and returns a slice of bytes and an error
 func (p Payload) SignatureBytes() ([]byte, error) {
 	sig, err := base64.StdEncoding.DecodeString(p.Signature)
 	if err != nil {
@@ -189,6 +202,7 @@ func (p Payload) SignatureBytes() ([]byte, error) {
 	return sig, nil
 }
 
+// MessageBytes method decodes a Payload.Message and returns a slice of bytes and an error
 func (p Payload) MessageBytes() ([]byte, error) {
 	message, err := base64.StdEncoding.DecodeString(p.Message)
 	if err != nil {
@@ -198,6 +212,8 @@ func (p Payload) MessageBytes() ([]byte, error) {
 	return message, nil
 }
 
+// GetMessage method decodes and unmarshals a Payload.Message and returns a pointer to
+// a message and an error
 func (p Payload) GetMessage() (*Message, error) {
 	// decode message
 	message, err := p.MessageBytes()
@@ -214,6 +230,9 @@ func (p Payload) GetMessage() (*Message, error) {
 	return &m, nil
 }
 
+// ValidateTTL checks that a TTL is configured within the boundries of a proper TTL
+// and then checks the TTL against the diff of the timestamp & time.Now().
+// if any of the checks fail, ValidateTTL returns an error
 func (m Message) ValidateTTL() error {
 	t := m.TTL
 
@@ -239,6 +258,8 @@ func (m Message) ValidateTTL() error {
 	return nil
 }
 
+// ValidateDataSize decodes data and checks that it does not excede MaxDataBytes.
+// ValidateDataSize returns an error if any validation fails.
 func (m Message) ValidateDataSize() error {
 	data, err := m.DataBytes()
 	if err != nil {
@@ -270,6 +291,7 @@ func (m Message) ValidateTimeStamp() error {
 	return nil
 }
 
+// DataBytes method decodes a Message.Data and returns a slice of bytes and an error
 func (m Message) DataBytes() ([]byte, error) {
 	data, err := base64.StdEncoding.DecodeString(m.Data)
 	if err != nil {
@@ -279,7 +301,11 @@ func (m Message) DataBytes() ([]byte, error) {
 	return data, nil
 }
 
-func SubmitHandleFunc(w http.ResponseWriter, r *http.Request) {
+// submitHandleFunc reads and validates a Payload from r.Body and runs a series of
+// Payload and Message validations. If all checks pass, the pubkey is hashed and
+// the hash and payload are written to the KV store.
+// TODO: return a proper JSON formatted response
+func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 	p, err := NewPayloadFromReader(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
@@ -309,19 +335,6 @@ func SubmitHandleFunc(w http.ResponseWriter, r *http.Request) {
 
 	pubKey, _ := p.PubKeyBytes() // no error checking needed, already validated
 	hash := MultiHashToString(pubKey)
-
-	// USED FOR checking out values
-
-	// log.Println("b58: " + mh.B58String())
-	// log.Println("hex: " + mh.HexString())
-	// dh, err := multihash.Decode(mh)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// log.Printf("        %x\n", dh.Length)
-	// log.Printf("         %x\n", dh.Code)
-	// log.Printf("         %s\n", dh.Name)
-	// log.Printf("             %x\n", dh.Digest)
 
 	hc.Set(hash, *p)
 	w.Write([]byte(hash))
@@ -362,12 +375,18 @@ func ValidateMultiHash(hash string) error {
 	return nil
 }
 
+// getPayloadHandleFunc gets a payload from Context, marshals the json,
+// and returns the marshaled json in the response
 func getPayloadHandleFunc(w http.ResponseWriter, r *http.Request) {
 	p := r.Context().Value("payload").(Payload)
 	payload, _ := json.Marshal(p)
 	w.Write(payload)
 }
 
+// pkHashCtx is the primary response middleware used to retrieve and validate
+// a payload. This middleware is designed to verify that the payload is properly
+// formatted, as well as checking for common issues such as malformed hashes,
+// invalid TTLs, and pubkey mismatches.
 func pkHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pkHash := chi.URLParam(r, "pkHash")
@@ -428,17 +447,20 @@ func pkHashCtx(next http.Handler) http.Handler {
 
 // TODO This is the in-memory placeholder until we get a real db such as badger or redis
 
+// HashCache  is the primary in-memory data storage and retrieval struct
 type HashCache struct {
 	sync.RWMutex
 	internal map[string]Payload
 }
 
+// NewHashCache returns a pointer to a new intance of HashCache
 func NewHashCache() *HashCache {
 	return &HashCache{
 		internal: make(map[string]Payload),
 	}
 }
 
+// Get method for HashCache with read locks
 func (hc *HashCache) Get(key string) (Payload, bool) {
 	hc.RLock()
 	result, ok := hc.internal[key]
@@ -446,12 +468,14 @@ func (hc *HashCache) Get(key string) (Payload, bool) {
 	return result, ok
 }
 
+// Set method for HashCache with read/write locks
 func (hc *HashCache) Set(key string, value Payload) {
 	hc.Lock()
 	hc.internal[key] = value
 	hc.Unlock()
 }
 
+// Delete method for HashCache with read/write locks
 func (hc *HashCache) Delete(key string) {
 	hc.Lock()
 	delete(hc.internal, key)
