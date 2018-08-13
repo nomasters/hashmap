@@ -70,3 +70,42 @@ an example of modifying the inputs is as follows:
 ```
 hashmap-helper gen-payload --data="{\"hello\":\"world\"}" --timestamp=1534121771 --ttl=5 < priv.key
 ```
+
+to analyze a payload, you can run the analyzer as follows:
+
+```
+hashmap-helper analyze < payload.json
+
+Payload
+-------
+
+{
+  "message": "eyJkYXRhIjoiZXlKb1pXeHNieUk2SW5kdmNteGtJbjA9IiwidGltZXN0YW1wIjoxNTM0MTYyMzgzLCJ0dGwiOjg2NDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9",
+  "sig": "h7clARjoYeh3Mmg7EOsKb0QVpvhKUYymFeZ7tFIyGqdNd5mt/QMmvtO/fWy9/nYbcDXQ0+37VFmhpBjMEFXlAQ==",
+  "pubkey": "z0CRLsemGDadzmzA9/3R3e4JkEtVZLOD+gAU7EtychQ="
+}
+
+Message
+-------
+
+{
+  "data": "eyJoZWxsbyI6IndvcmxkIn0=",
+  "timestamp": 1534162383,
+  "ttl": 86400,
+  "sigMethod": "nacl-sign-ed25519",
+  "version": "0.0.1"
+}
+
+Data
+----
+
+{"hello":"world"}
+
+Checker
+-------
+
+Verify Payload      : PASS
+Validate TTL        : PASS
+Validate Timestamp  : PASS
+Validate Data Size  : PASS
+```
