@@ -95,7 +95,7 @@ Payload
 -------
 
 {
-  "message": "eyJkYXRhIjoiZXlKb1pXeHNieUk2SW5kdmNteGtJbjA9IiwidGltZXN0YW1wIjoxNTM0MTYyMzgzLCJ0dGwiOjg2NDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9",
+  "data": "eyJkYXRhIjoiZXlKb1pXeHNieUk2SW5kdmNteGtJbjA9IiwidGltZXN0YW1wIjoxNTM0MTYyMzgzLCJ0dGwiOjg2NDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9",
   "sig": "h7clARjoYeh3Mmg7EOsKb0QVpvhKUYymFeZ7tFIyGqdNd5mt/QMmvtO/fWy9/nYbcDXQ0+37VFmhpBjMEFXlAQ==",
   "pubkey": "z0CRLsemGDadzmzA9/3R3e4JkEtVZLOD+gAU7EtychQ="
 }
@@ -104,7 +104,7 @@ Data
 ----
 
 {
-  "data": "eyJoZWxsbyI6IndvcmxkIn0=",
+  "message": "eyJoZWxsbyI6IndvcmxkIn0=",
   "timestamp": 1534162383,
   "ttl": 86400,
   "sigMethod": "nacl-sign-ed25519",
