@@ -100,8 +100,8 @@ Payload
   "pubkey": "z0CRLsemGDadzmzA9/3R3e4JkEtVZLOD+gAU7EtychQ="
 }
 
-Message
--------
+Data
+----
 
 {
   "data": "eyJoZWxsbyI6IndvcmxkIn0=",
@@ -111,16 +111,16 @@ Message
   "version": "0.0.1"
 }
 
-Data
-----
+Message
+-------
 
 {"hello":"world"}
 
 Checker
 -------
 
-Verify Payload      : PASS
-Validate TTL        : PASS
-Validate Timestamp  : PASS
-Validate Data Size  : PASS
+Verify Payload         : PASS
+Validate TTL           : PASS
+Validate Timestamp     : PASS
+Validate Message Size  : PASS
 ```
