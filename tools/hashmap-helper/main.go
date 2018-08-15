@@ -51,32 +51,32 @@ func analyze() {
 	fmt.Println(string(payload))
 
 	// Outputs Message as Indented JSON string
-	fmt.Println("\nMessage\n-------\n")
-	m, err := p.GetMessage()
+	fmt.Println("\nData\n-------\n")
+	d, err := p.GetData()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	message, err := json.MarshalIndent(m, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(message))
-
-	// Outputs Data as string
-	fmt.Println("\nData\n----\n")
-	data, err := m.DataBytes()
+	data, err := json.MarshalIndent(d, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(string(data))
 
+	// Outputs Data as string
+	fmt.Println("\nMessage\n----\n")
+	message, err := d.MessageBytes()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(message))
+
 	fmt.Println("\nChecker\n-------\n")
 
 	fmt.Println("Verify Payload      : " + verifyChecker(p))
-	fmt.Println("Validate TTL        : " + ttlChecker(*m))
-	fmt.Println("Validate Timestamp  : " + timeStampChecker(*m))
-	fmt.Println("Validate Data Size  : " + dataSizeChecker(*m))
+	fmt.Println("Validate TTL        : " + ttlChecker(*d))
+	fmt.Println("Validate Timestamp  : " + timeStampChecker(*d))
+	fmt.Println("Validate Data Size  : " + dataSizeChecker(*d))
 }
 
 func verifyChecker(p hashmap.Payload) string {
@@ -87,25 +87,25 @@ func verifyChecker(p hashmap.Payload) string {
 	return status
 }
 
-func ttlChecker(m hashmap.Message) string {
+func ttlChecker(d hashmap.Data) string {
 	status := "PASS"
-	if err := m.ValidateTTL(); err != nil {
+	if err := d.ValidateTTL(); err != nil {
 		status = "FAIL - " + err.Error()
 	}
 	return status
 }
 
-func timeStampChecker(m hashmap.Message) string {
+func timeStampChecker(d hashmap.Data) string {
 	status := "PASS"
-	if err := m.ValidateTimeStamp(); err != nil {
+	if err := d.ValidateTimeStamp(); err != nil {
 		status = "FAIL - " + err.Error()
 	}
 	return status
 }
 
-func dataSizeChecker(m hashmap.Message) string {
+func dataSizeChecker(d hashmap.Data) string {
 	status := "PASS"
-	if err := m.ValidateDataSize(); err != nil {
+	if err := d.ValidateMessageSize(); err != nil {
 		status = "FAIL - " + err.Error()
 	}
 	return status
@@ -113,22 +113,22 @@ func dataSizeChecker(m hashmap.Message) string {
 
 func genPayload() {
 
-	d := flag.StringP("data", "d", `{"content":"hello, world. This is data stored in HashMap."}`, "data to be stored in the message")
-	ttl := flag.Int64P("ttl", "t", hashmap.MessageTTLDefault, "ttl in seconds for payload")
+	m := flag.StringP("message", "m", `{"content":"hello, world. This is data stored in HashMap."}`, "message to be stored in data of payload")
+	ttl := flag.Int64P("ttl", "t", hashmap.DataTTLDefault, "ttl in seconds for payload")
 	ts := flag.Int64P("timestamp", "s", time.Now().Unix(), "timestamp for message in unix-time")
 
 	flag.Parse()
 
 	// Create the Message for Payload, and marshal the JSON
-	data := base64.StdEncoding.EncodeToString([]byte(*d))
-	m := hashmap.Message{
-		Data:      data,
+	message := base64.StdEncoding.EncodeToString([]byte(*m))
+	d := hashmap.Data{
+		Message:   message,
 		Timestamp: *ts,
 		TTL:       *ttl,
 		SigMethod: hashmap.DefaultSigMethod,
 		Version:   hashmap.Version,
 	}
-	message, err := json.Marshal(m)
+	data, err := json.Marshal(d)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,11 +147,11 @@ func genPayload() {
 	copy(privateKey[:], pk)
 	copy(publicKey[:], pk[32:])
 
-	s := sign.Sign(nil, message, &privateKey)[:64]
+	s := sign.Sign(nil, data, &privateKey)[:64]
 	sig := base64.StdEncoding.EncodeToString(s)
 
 	p := hashmap.Payload{
-		Message:   base64.StdEncoding.EncodeToString(message),
+		Data:      base64.StdEncoding.EncodeToString(data),
 		Signature: sig,
 		PublicKey: base64.StdEncoding.EncodeToString(publicKey[:]),
 	}
@@ -161,7 +161,7 @@ func genPayload() {
 		log.Fatal(err)
 	}
 
-	if _, valid := sign.Open(nil, append(s, message...), &publicKey); !valid {
+	if _, valid := sign.Open(nil, append(s, data...), &publicKey); !valid {
 		log.Fatal("sig failed")
 	}
 

@@ -20,16 +20,16 @@ import (
 )
 
 const (
-	MessageTTLDefault = 86400  // 1 day in seconds
-	MessageTTLMax     = 604800 // 1 week in seconds
-	DefaultSigMethod  = "nacl-sign-ed25519"
-	Version           = "0.0.1"
-	MaxPostBodySize   = 2000 // 2KB
-	MaxSubmitDrift    = 15 * time.Second
-	ServerTimeout     = 15 * time.Second
-	DefaultPort       = ":3000"
-	MaxDataBytes      = 512
-	Blake2b256Code    = 45600
+	DataTTLDefault   = 86400  // 1 day in seconds
+	DataTTLMax       = 604800 // 1 week in seconds
+	DefaultSigMethod = "nacl-sign-ed25519"
+	Version          = "0.0.1"
+	MaxPostBodySize  = 2000 // 2KB
+	MaxSubmitDrift   = 15 * time.Second
+	ServerTimeout    = 15 * time.Second
+	DefaultPort      = ":3000"
+	MaxMessageBytes  = 512
+	Blake2b256Code   = 45600
 )
 
 var (
@@ -42,15 +42,15 @@ func init() {
 
 // Payload is the primary wrapper struct for HashMap Values and submissions
 type Payload struct {
-	Message   string `json:"message"`
+	Data      string `json:"data"`
 	Signature string `json:"sig"`
 	PublicKey string `json:"pubkey"`
 }
 
-// Message is the struct for the Message in a Payload. It contains all data that is
+// Data is the struct for the Data in a Payload. It contains all data that is
 // signed by the Payload Pubkey
-type Message struct {
-	Data      string `json:"data"`
+type Data struct {
+	Message   string `json:"message"`
 	Timestamp int64  `json:"timestamp"`
 	TTL       int64  `json:"ttl"`
 	SigMethod string `json:"sigMethod"`
@@ -71,11 +71,11 @@ type NaClSignEd25519 struct {
 }
 
 // NewNaClSignEd25519 takes to byte slices and returns a pointer to NaClSignEd25519 struct
-func NewNaClSignEd25519(SignedMessage, PublicKey []byte) *NaClSignEd25519 {
+func NewNaClSignEd25519(s, p []byte) *NaClSignEd25519 {
 	var pk [32]byte
-	copy(pk[:], PublicKey)
+	copy(pk[:], p)
 	return &NaClSignEd25519{
-		SignedMessage: SignedMessage,
+		SignedMessage: s,
 		PublicKey:     &pk,
 	}
 }
@@ -149,8 +149,8 @@ func (p Payload) Verify() error {
 	return nil
 }
 
-// NewValidator decodes the pubKey, Signature, and MessageBytes to byte slices.
-// It then Unmarshals the Message and analyzes the SigMethod, either returning
+// NewValidator decodes the pubKey, Signature, and DataBytes to byte slices.
+// It then Unmarshals the Data and analyzes the SigMethod, either returning
 // a Validator or an error.
 func (p Payload) NewValidator() (Validator, error) {
 	pubKey, err := p.PubKeyBytes()
@@ -161,21 +161,21 @@ func (p Payload) NewValidator() (Validator, error) {
 	if err != nil {
 		return nil, err
 	}
-	messageBytes, err := p.MessageBytes()
+	dataBytes, err := p.DataBytes()
 	if err != nil {
 		return nil, err
 	}
-	message, err := p.GetMessage()
+	data, err := p.GetData()
 	if err != nil {
 		return nil, err
 	}
 
-	switch message.SigMethod {
+	switch data.SigMethod {
 	case "nacl-sign-ed25519":
 		if len(pubKey) != 32 {
 			return nil, errors.New("invalid pubKey length")
 		}
-		return NewNaClSignEd25519(append(sig, messageBytes...), pubKey), nil
+		return NewNaClSignEd25519(append(sig, dataBytes...), pubKey), nil
 	default:
 		return nil, errors.New("invalid signature method")
 	}
@@ -202,52 +202,51 @@ func (p Payload) SignatureBytes() ([]byte, error) {
 	return sig, nil
 }
 
-// MessageBytes method decodes a Payload.Message and returns a slice of bytes and an error
-func (p Payload) MessageBytes() ([]byte, error) {
-	message, err := base64.StdEncoding.DecodeString(p.Message)
+// DataBytes method decodes a Payload.Data and returns a slice of bytes and an error
+func (p Payload) DataBytes() ([]byte, error) {
+	d, err := base64.StdEncoding.DecodeString(p.Data)
 	if err != nil {
-		log.Printf("invalid message encoding: %v\n", err)
-		return nil, errors.New("invalid message encoding, expecting base64")
+		log.Printf("invalid data encoding: %v\n", err)
+		return nil, errors.New("invalid data encoding, expecting base64")
 	}
-	return message, nil
+	return d, nil
 }
 
-// GetMessage method decodes and unmarshals a Payload.Message and returns a pointer to
-// a message and an error
-func (p Payload) GetMessage() (*Message, error) {
-	// decode message
-	message, err := p.MessageBytes()
+// GetData method decodes and unmarshals a Payload.Data and returns a pointer to data and an error
+func (p Payload) GetData() (*Data, error) {
+	// decode data
+	data, err := p.DataBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	m := Message{}
-	if err := json.Unmarshal(message, &m); err != nil {
-		log.Printf("invalid message: %v\n", err)
-		return nil, errors.New("invalid message")
+	d := Data{}
+	if err := json.Unmarshal(data, &d); err != nil {
+		log.Printf("invalid data: %v\n", err)
+		return nil, errors.New("invalid data")
 	}
 
-	return &m, nil
+	return &d, nil
 }
 
 // ValidateTTL checks that a TTL is configured within the boundries of a proper TTL
 // and then checks the TTL against the diff of the timestamp & time.Now().
 // if any of the checks fail, ValidateTTL returns an error
-func (m Message) ValidateTTL() error {
-	t := m.TTL
+func (d Data) ValidateTTL() error {
+	t := d.TTL
 
-	if t > MessageTTLMax {
-		return fmt.Errorf("message ttl exceeds max allowed of %v\n", MessageTTLMax)
+	if t > DataTTLMax {
+		return fmt.Errorf("message ttl exceeds max allowed of %v\n", DataTTLMax)
 	}
 
 	if t == 0 {
-		t = MessageTTLDefault
+		t = DataTTLDefault
 	}
 
 	// convert to duration
 	ttl := time.Duration(t) * time.Second
 
-	timeStamp := time.Unix(m.Timestamp, 0)
+	timeStamp := time.Unix(d.Timestamp, 0)
 	now := time.Now()
 	diff := now.Sub(timeStamp)
 
@@ -258,24 +257,24 @@ func (m Message) ValidateTTL() error {
 	return nil
 }
 
-// ValidateDataSize decodes data and checks that it does not excede MaxDataBytes.
-// ValidateDataSize returns an error if any validation fails.
-func (m Message) ValidateDataSize() error {
-	data, err := m.DataBytes()
+// ValidateMessageSize decodes data and checks that it does not excede MaxMessageBytes.
+// ValidateMessageSize returns an error if any validation fails.
+func (d Data) ValidateMessageSize() error {
+	data, err := d.MessageBytes()
 	if err != nil {
 		return err
 	}
 
-	if len(data) > MaxDataBytes {
-		return fmt.Errorf("data exceeds max allowed: %v\n", MaxDataBytes)
+	if len(data) > MaxMessageBytes {
+		return fmt.Errorf("message exceeds max allowed: %v\n", MaxMessageBytes)
 	}
 	return nil
 }
 
 // ValidateTimeStamp compares time.Now to message Timestamp. If the difference
 // exceeds MaxSubmitDrift, it returns an error. This is to prevent replay attacks.
-func (m Message) ValidateTimeStamp() error {
-	timeStamp := time.Unix(m.Timestamp, 0)
+func (d Data) ValidateTimeStamp() error {
+	timeStamp := time.Unix(d.Timestamp, 0)
 	now := time.Now()
 	diff := now.Sub(timeStamp)
 
@@ -291,18 +290,18 @@ func (m Message) ValidateTimeStamp() error {
 	return nil
 }
 
-// DataBytes method decodes a Message.Data and returns a slice of bytes and an error
-func (m Message) DataBytes() ([]byte, error) {
-	data, err := base64.StdEncoding.DecodeString(m.Data)
+// MessageBytes method decodes a Message.Data and returns a slice of bytes and an error
+func (d Data) MessageBytes() ([]byte, error) {
+	m, err := base64.StdEncoding.DecodeString(d.Message)
 	if err != nil {
-		log.Printf("invalid data encoding: %v\n", err)
-		return data, errors.New("invalid data encoding, expecting base64")
+		log.Printf("invalid message encoding: %v\n", err)
+		return m, errors.New("invalid message encoding, expecting base64")
 	}
-	return data, nil
+	return m, nil
 }
 
 // submitHandleFunc reads and validates a Payload from r.Body and runs a series of
-// Payload and Message validations. If all checks pass, the pubkey is hashed and
+// Payload and Data validations. If all checks pass, the pubkey is hashed and
 // the hash and payload are written to the KV store.
 // TODO: return a proper JSON formatted response
 func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
@@ -312,23 +311,23 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := p.GetMessage()
+	d, err := p.GetData()
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
 
-	if err := m.ValidateTTL(); err != nil {
+	if err := d.ValidateTTL(); err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
 
-	if err := m.ValidateDataSize(); err != nil {
+	if err := d.ValidateMessageSize(); err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
 
-	if err := m.ValidateTimeStamp(); err != nil {
+	if err := d.ValidateTimeStamp(); err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
@@ -422,9 +421,9 @@ func pkHashCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		message, err := payload.GetMessage()
+		data, err := payload.GetData()
 		if err != nil {
-			log.Println("message failed to load after reading from cache, deleting")
+			log.Println("data failed to load after reading from cache, deleting")
 			log.Println(err)
 			log.Println(payload)
 			hc.Delete(pkHash)
@@ -432,7 +431,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		if err := message.ValidateTTL(); err != nil {
+		if err := data.ValidateTTL(); err != nil {
 			log.Println(err)
 			log.Println(payload)
 			hc.Delete(pkHash)
