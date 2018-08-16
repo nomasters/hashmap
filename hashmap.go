@@ -256,13 +256,13 @@ func MultiHashToString(b []byte) string {
 func ValidateMultiHash(hash string) error {
 	mh, err := multihash.FromB58String(hash)
 	if err != nil {
-		log.Printf("%v failed to decode multihash with error: \n", hash, err)
+		log.Printf("%v failed to decode multihash with error: %s\n", hash, err)
 		return errors.New("multiHash Decode failed")
 	}
 
 	dh, err := multihash.Decode(mh)
 	if err != nil {
-		log.Printf("%v failed to decode multihash with error: \n", hash, err)
+		log.Printf("%v failed to decode multihash with error: %s\n", hash, err)
 		return errors.New("multiHash Decode failed")
 	}
 

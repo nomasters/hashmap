@@ -15,7 +15,7 @@ func Payload(input []byte) error {
 	}
 
 	// Outputs Payload as Indented JSON string
-	fmt.Println("\nPayload\n-------\n")
+	fmt.Printf("\n\nPayload\n-------\n\n")
 	payload, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func Payload(input []byte) error {
 	fmt.Println(string(payload))
 
 	// Outputs Message as Indented JSON string
-	fmt.Println("\nData\n-------\n")
+	fmt.Printf("\n\nData\n----\n\n")
 	d, err := p.GetData()
 	if err != nil {
 		return err
@@ -36,14 +36,14 @@ func Payload(input []byte) error {
 	fmt.Println(string(data))
 
 	// Outputs Data as string
-	fmt.Println("\nMessage\n----\n")
+	fmt.Printf("\n\nMessage\n-------\n\n")
 	message, err := d.MessageBytes()
 	if err != nil {
 		return err
 	}
 	fmt.Println(string(message))
 
-	fmt.Println("\nChecker\n-------\n")
+	fmt.Printf("\n\nChecker\n-------\n\n")
 
 	fmt.Println("Verify Payload      : " + verifyChecker(p))
 	fmt.Println("Validate TTL        : " + ttlChecker(*d))
