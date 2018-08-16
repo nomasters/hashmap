@@ -17,11 +17,11 @@ require (
 	github.com/spf13/afero v1.1.1 // indirect
 	github.com/spf13/cast v1.2.0 // indirect
 	github.com/spf13/cobra v0.0.3
-	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
+	github.com/spf13/jwalterweatherman v0.0.0-20180814060501-14d3d4c51834 // indirect
 	github.com/spf13/pflag v1.0.2 // indirect
 	github.com/spf13/viper v1.1.0
 	golang.org/x/crypto v0.0.0-20180808211826-de0752318171
-	golang.org/x/sys v0.0.0-20180810173357-98c5dad5d1a0 // indirect
+	golang.org/x/sys v0.0.0-20180815093151-14742f9018cd // indirect
 	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
 )
