@@ -13,6 +13,7 @@ import (
 	"github.com/multiformats/go-multihash"
 )
 
+// A set of constants used to set defaults and Max settings
 const (
 	DataTTLDefault   = 86400  // 1 day in seconds
 	DataTTLMax       = 604800 // 1 week in seconds
@@ -51,7 +52,7 @@ type Data struct {
 	Version   string `json:"version"`
 }
 
-// Run Options for the hashMap server
+// Options for the hashMap Server
 type Options struct {
 	Port string
 }
@@ -85,11 +86,7 @@ func (p Payload) Verify() error {
 	if err != nil {
 		return err
 	}
-	if err := v.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return v.Validate()
 }
 
 // NewValidator decodes the pubKey, Signature, and DataBytes to byte slices.

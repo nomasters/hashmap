@@ -10,6 +10,12 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
+// ctxKey is an unexported context key type for use with ctx
+type ctxKey int
+
+// payloadCtxKey is used to give payload a collision-free key
+const payloadCtxKey ctxKey = 0
+
 // Run takes an Options struct and a server running on a specified port
 // TODO: add TLS support
 // TODO: add middleware such as rate limiting and logging
@@ -69,7 +75,7 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 // getPayloadHandleFunc gets a payload from Context, marshals the json,
 // and returns the marshaled json in the response
 func getPayloadHandleFunc(w http.ResponseWriter, r *http.Request) {
-	p := r.Context().Value("payload").(Payload)
+	p := r.Context().Value(payloadCtxKey).(Payload)
 	payload, _ := json.Marshal(p)
 	w.Write(payload)
 }
@@ -131,7 +137,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "payload", payload)
+		ctx := context.WithValue(r.Context(), payloadCtxKey, payload)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

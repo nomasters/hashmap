@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/nacl/sign"
 )
 
+// Options is a struct used for passing in Message, TTL, and Timestamp options
+// and is used in conjuction with CLI flags
 type Options struct {
 	Message   string
 	TTL       int64
