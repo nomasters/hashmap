@@ -12,7 +12,7 @@ import (
 )
 
 // Options is a struct used for passing in Message, TTL, and Timestamp options
-// and is used in conjuction with CLI flags
+// and is used in conjunction with CLI flags
 type Options struct {
 	Message   string
 	TTL       int64
