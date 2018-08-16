@@ -1,6 +1,15 @@
 # hashmap
 a light-weight cryptographically signed key value store inspired by IPNS
 
+[![circleci][1]][2] [![Go Report Card][3]][4]
+
+[1]: https://circleci.com/gh/nomasters/hashmap.svg?style=shield&circle-token=46ac657a268fef44dc132ef2241291c51811edd2
+[2]: https://circleci.com/gh/nomasters/hashmap
+[3]: https://goreportcard.com/badge/github.com/nomasters/hashmap
+[4]: https://goreportcard.com/report/github.com/nomasters/hashmap
+
+
+
 `hashmap` is a light-weight cryptographically signed key-value store inspired by IPNS. The purpose of this tool is to allow any user to generate a unique `ed25519` private key and use the corresponding hash of the public key as the verified REST enppoint for a key-value store.
 
 
