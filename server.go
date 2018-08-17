@@ -22,6 +22,14 @@ type ServerOptions struct {
 	Storage string
 }
 
+type SubmitSuccessResponse struct {
+	Endpoint string `json:"endpoint"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 var (
 	s Storage
 )
@@ -84,17 +92,25 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 	pubKey, _ := p.PubKeyBytes() // no error checking needed, already validated
 	hash := MultiHashToString(pubKey)
 
-	if err := s.Set(hash, *p, nil); err != nil {
+	pwm := PayloadWithMetadata{
+		Payload: *p,
+		// TODO add metadata stuff
+	}
+
+	if err := s.Set(hash, pwm); err != nil {
 		http.Error(w, "internal error saving payload", 500)
 		return
 	}
 
-	w.Write([]byte(hash))
+	response, _ := json.Marshal(SubmitSuccessResponse{Endpoint: hash})
+
+	w.Write([]byte(response))
 }
 
 // getPayloadHandleFunc gets a payload from Context, marshals the json,
 // and returns the marshaled json in the response
 func getPayloadHandleFunc(w http.ResponseWriter, r *http.Request) {
+	// TODO: add type casting protections here
 	p := r.Context().Value(payloadCtxKey).(Payload)
 	payload, _ := json.Marshal(p)
 	w.Write(payload)
@@ -113,11 +129,12 @@ func pkHashCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		payload, _, err := s.Get(pkHash)
+		pwm, err := s.Get(pkHash)
 		if err != nil {
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}
+		payload := pwm.Payload
 
 		if err := payload.Verify(); err != nil {
 			// TODO: refactor to structured logs
