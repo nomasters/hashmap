@@ -36,44 +36,40 @@ func NewStorage(e Engine, opts StorageOptions) (Storage, error) {
 
 // Storage is the primary interface for interacting with Payload and PayloadMetaData
 type Storage interface {
-	Get(key string) (Payload, PayloadMetaData, error)
-	Set(key string, value Payload, meta PayloadMetaData) error
+	Get(key string) (PayloadWithMetadata, error)
+	Set(key string, value PayloadWithMetadata) error
 	Delete(key string) error
 }
 
 // MemoryStore  is the primary in-memory data storage and retrieval struct
 type MemoryStore struct {
 	sync.RWMutex
-	payload  map[string]Payload
-	metadata map[string]PayloadMetaData
+	internal map[string]PayloadWithMetadata
 }
 
 // NewMemoryStore returns a pointer to a new intance ofMemoryStore
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		payload:  make(map[string]Payload),
-		metadata: make(map[string]PayloadMetaData),
+		internal: make(map[string]PayloadWithMetadata),
 	}
 }
 
 // Get method for MemoryStore with read locks
-func (m *MemoryStore) Get(key string) (Payload, PayloadMetaData, error) {
+func (m *MemoryStore) Get(key string) (PayloadWithMetadata, error) {
 	var err error
 	m.RLock()
-	payloadResult, ok := m.payload[key]
-	metadataResult := m.metadata[key]
+	v, ok := m.internal[key]
 	m.RUnlock()
 	if !ok {
 		err = errors.New("key not found")
 	}
-	return payloadResult, metadataResult, err
+	return v, err
 }
 
 // Set method for MemoryStore with read/write locks
-func (m *MemoryStore) Set(key string, value Payload, meta PayloadMetaData) error {
+func (m *MemoryStore) Set(key string, value PayloadWithMetadata) error {
 	m.Lock()
-	m.payload[key] = value
-	m.metadata[key] = meta
+	m.internal[key] = value
 	m.Unlock()
 	return nil
 }
@@ -81,8 +77,7 @@ func (m *MemoryStore) Set(key string, value Payload, meta PayloadMetaData) error
 // Delete method for MemoryStore with read/write locks
 func (m *MemoryStore) Delete(key string) error {
 	m.Lock()
-	delete(m.payload, key)
-	delete(m.metadata, key)
+	delete(m.internal, key)
 	m.Unlock()
 	return nil
 }
