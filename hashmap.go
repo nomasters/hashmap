@@ -27,20 +27,14 @@ const (
 	Blake2b256Code   = 45600
 )
 
-var (
-	hc *HashCache
-)
-
-func init() {
-	hc = NewHashCache()
-}
-
 // Payload is the primary wrapper struct for HashMap Values and submissions
 type Payload struct {
 	Data      string `json:"data"`
 	Signature string `json:"sig"`
 	PublicKey string `json:"pubkey"`
 }
+
+type PayloadMetaData map[string]string
 
 // Data is the struct for the Data in a Payload. It contains all data that is
 // signed by the Payload Pubkey
@@ -50,11 +44,6 @@ type Data struct {
 	TTL       int64  `json:"ttl"`
 	SigMethod string `json:"sigMethod"`
 	Version   string `json:"version"`
-}
-
-// Options for the hashMap Server
-type Options struct {
-	Port string
 }
 
 // NewPayloadFromReader returns a fully verified Payload from an io.Reader source.

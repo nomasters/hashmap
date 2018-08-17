@@ -16,13 +16,29 @@ type ctxKey int
 // payloadCtxKey is used to give payload a collision-free key
 const payloadCtxKey ctxKey = 0
 
+// ServerOptions for the hashMap Server
+type ServerOptions struct {
+	Port    string
+	Storage string
+}
+
+var (
+	s Storage
+)
+
 // Run takes an Options struct and a server running on a specified port
 // TODO: add TLS support
 // TODO: add middleware such as rate limiting and logging
-func Run(opts Options) {
+func Run(opts ServerOptions) {
 	if opts.Port == "" {
 		opts.Port = DefaultPort
 	}
+
+	s, _ = NewStorage(MemoryStorage, nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 	r := chi.NewRouter()
 	r.Use(middleware.Timeout(ServerTimeout))
 	r.Post("/", submitHandleFunc)
@@ -68,7 +84,11 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 	pubKey, _ := p.PubKeyBytes() // no error checking needed, already validated
 	hash := MultiHashToString(pubKey)
 
-	hc.Set(hash, *p)
+	if err := s.Set(hash, *p, nil); err != nil {
+		http.Error(w, "internal error saving payload", 500)
+		return
+	}
+
 	w.Write([]byte(hash))
 }
 
@@ -93,8 +113,8 @@ func pkHashCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		payload, ok := hc.Get(pkHash)
-		if !ok {
+		payload, _, err := s.Get(pkHash)
+		if err != nil {
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}
@@ -104,7 +124,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 			log.Println("payload failed to verify after reading from cache, deleting")
 			log.Println(err)
 			log.Println(payload)
-			hc.Delete(pkHash)
+			s.Delete(pkHash)
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}
@@ -114,7 +134,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 		pubKey, _ := payload.PubKeyBytes() // no error checking needed, already validated
 		if h := MultiHashToString(pubKey); h != pkHash {
 			log.Printf("key hash does not match pubkey value hash key: %s value: %s\n", pkHash, h)
-			hc.Delete(pkHash)
+			s.Delete(pkHash)
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}
@@ -124,7 +144,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 			log.Println("data failed to load after reading from cache, deleting")
 			log.Println(err)
 			log.Println(payload)
-			hc.Delete(pkHash)
+			s.Delete(pkHash)
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}
@@ -132,7 +152,7 @@ func pkHashCtx(next http.Handler) http.Handler {
 		if err := data.ValidateTTL(); err != nil {
 			log.Println(err)
 			log.Println(payload)
-			hc.Delete(pkHash)
+			s.Delete(pkHash)
 			http.Error(w, http.StatusText(404), 404)
 			return
 		}

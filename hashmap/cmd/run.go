@@ -39,7 +39,7 @@ var runCmd = &cobra.Command{
 	Long:  `Runs the hashmap server`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("starting hashmap server version: %v running on port: %v\n", hashmap.Version, hashmap.DefaultPort)
-		opts := hashmap.Options{
+		opts := hashmap.ServerOptions{
 			Port: hashmap.DefaultPort,
 		}
 		hashmap.Run(opts)
