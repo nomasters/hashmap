@@ -20,7 +20,7 @@ type Options struct {
 
 // GeneratePayload takes an Options struct and the bytes of a private key
 // and returns a json encoded payload and an error
-func GeneratePayload(opts Options, pk []byte) ([]byte, error) {
+func GeneratePayload(opts Options, pk []byte) (*Payload, error) {
 
 	if opts.Message == "" {
 		opts.Message = `{"content":"hello, world. This is data stored in HashMap."}`
@@ -44,7 +44,7 @@ func GeneratePayload(opts Options, pk []byte) ([]byte, error) {
 	}
 	data, err := json.Marshal(d)
 	if err != nil {
-		return []byte(""), err
+		return nil, err
 	}
 
 	var privateKey [64]byte
@@ -55,10 +55,21 @@ func GeneratePayload(opts Options, pk []byte) ([]byte, error) {
 	s := sign.Sign(nil, data, &privateKey)[:64]
 	sig := base64.StdEncoding.EncodeToString(s)
 
-	p := Payload{
+	if _, valid := sign.Open(nil, append(s, data...), &publicKey); !valid {
+		return nil, errors.New("signature failed to validate")
+	}
+
+	return &Payload{
 		Data:      base64.StdEncoding.EncodeToString(data),
 		Signature: sig,
 		PublicKey: base64.StdEncoding.EncodeToString(publicKey[:]),
+	}, nil
+}
+
+func GeneratePayloadBytes(opts Options, pk []byte) ([]byte, error) {
+	p, err := GeneratePayload(opts, pk)
+	if err != nil {
+		return nil, err
 	}
 
 	payload, err := json.Marshal(p)
@@ -66,12 +77,7 @@ func GeneratePayload(opts Options, pk []byte) ([]byte, error) {
 		return []byte(""), err
 	}
 
-	if _, valid := sign.Open(nil, append(s, data...), &publicKey); !valid {
-		return []byte(""), errors.New("signature failed to validate")
-	}
-
 	return payload, nil
-
 }
 
 // GenerateKey a randomly generated ed25519 private key in bytes

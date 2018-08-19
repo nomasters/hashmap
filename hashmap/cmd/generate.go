@@ -67,7 +67,7 @@ var generateCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			payload, err := hashmap.GeneratePayload(opts, pk)
+			payload, err := hashmap.GeneratePayloadBytes(opts, pk)
 			if err != nil {
 				log.Fatal(err)
 			}

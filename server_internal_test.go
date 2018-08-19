@@ -1,14 +1,24 @@
 package hashmap
 
 import (
-	// "bytes"
-	// "io/ioutil"
-	// "net/http"
-	// "net/http/httptest"
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
-	// "github.com/stretchr/testify/assert"
-	// "github.com/stretchr/testify/require"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func buildExamplePayload(t *testing.T, msg string) *Payload {
+	t.Helper()
+	pk := GenerateKey()
+	opts := Options{}
+	p, err := GeneratePayload(opts, pk)
+	require.NoError(t, err)
+	return p
+}
 
 func TestSubmitHandleFunc(T *testing.T) {
 	T.Skip()
@@ -16,18 +26,15 @@ func TestSubmitHandleFunc(T *testing.T) {
 	T.Run("normal operation", func(t *testing.T) {
 		t.Parallel()
 
-		// pk, err := ioutil.ReadFile(examplePrivateKeyPath)
-		// require.NoError(t, err)
+		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
+		require.NoError(t, err)
 
-		// p, err := buildExamplePayload(Options{}, pk)
-		// require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
+		res := httptest.NewRecorder()
 
-		// req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(p))
-		// res := httptest.NewRecorder()
+		submitHandleFunc(res, req)
 
-		// submitHandleFunc(res, req)
-
-		// assert.Equal(t, http.StatusOK, res.Result().StatusCode)
+		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
 	})
 }
 

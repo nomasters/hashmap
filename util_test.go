@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/nomasters/hashmap"
-	"github.com/nomasters/hashmap/generate"
 
 	"github.com/stretchr/testify/require"
 )
@@ -110,7 +109,7 @@ func (er errorReader) Read(b []byte) (int, error) {
 func buildTestPayload(t *testing.T, message string) hashmap.Payload {
 	t.Helper()
 
-	opts := generate.Options{
+	opts := hashmap.Options{
 		Message:   message,
 		TTL:       hashmap.DataTTLMax,
 		Timestamp: time.Now().Unix(),
@@ -122,7 +121,7 @@ func buildTestPayload(t *testing.T, message string) hashmap.Payload {
 	pk, err := base64.StdEncoding.DecodeString(string(text))
 	require.NoError(t, err)
 
-	pbytes, err := generate.Payload(opts, pk)
+	pbytes, err := hashmap.GeneratePayloadBytes(opts, pk)
 	require.NoError(t, err)
 
 	var payload hashmap.Payload

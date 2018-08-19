@@ -34,7 +34,8 @@ func NewNaClSignEd25519(s, p []byte) *NaClSignEd25519 {
 // signed mesage against the Ed25519 pubkey
 func (n NaClSignEd25519) Validate() error {
 	// verify signature
-	if _, valid := sign.Open(nil, append(n.SignedMessage), n.PublicKey); !valid {
+	_, valid := sign.Open(nil, append(n.SignedMessage), n.PublicKey)
+	if !valid {
 		log.Printf("invalid signature: %x\n", n.PublicKey)
 		return errors.New("invalid signature")
 	}
