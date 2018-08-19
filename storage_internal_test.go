@@ -13,15 +13,14 @@ func TestMemoryStore_Get(T *testing.T) {
 		t.Parallel()
 
 		exampleKey := "example"
+		expected := PayloadWithMetadata{Payload: *examplePayload}
 		ms := NewMemoryStore()
-		ms.internal = map[string]PayloadWithMetadata{
-			exampleKey: {Payload: *examplePayload},
-		}
+		ms.internal = map[string]PayloadWithMetadata{exampleKey: expected}
 
 		actual, err := ms.Get(exampleKey)
 
 		assert.NoError(t, err)
-		assert.Equal(t, examplePayload, actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	T.Run("without relevant entry", func(t *testing.T) {
@@ -43,17 +42,18 @@ func TestMemoryStore_Set(T *testing.T) {
 		t.Parallel()
 
 		exampleKey := "example"
+		expected := PayloadWithMetadata{Payload: *examplePayload}
 		ms := NewMemoryStore()
 
 		_, err := ms.Get(exampleKey)
 		assert.Error(t, err)
 
-		ms.Set(exampleKey, PayloadWithMetadata{Payload: *examplePayload})
+		ms.Set(exampleKey, expected)
 
 		actual, err := ms.Get(exampleKey)
 
 		assert.NoError(t, err)
-		assert.Equal(t, examplePayload, actual)
+		assert.Equal(t, expected, actual)
 	})
 }
 
@@ -67,9 +67,8 @@ func TestMemoryStore_Delete(T *testing.T) {
 		ms := NewMemoryStore()
 		ms.Set(exampleKey, PayloadWithMetadata{Payload: *examplePayload})
 
-		actual, err := ms.Get(exampleKey)
+		_, err := ms.Get(exampleKey)
 		assert.NoError(t, err)
-		assert.Equal(t, examplePayload, actual)
 
 		ms.Delete(exampleKey)
 
