@@ -63,7 +63,8 @@ func NewPayloadFromReader(r io.Reader) (*Payload, error) {
 		log.Printf("error reading payload: %v\n", err)
 		return nil, errors.New("error reading payload")
 	}
-	// unmarshall the payload, returning an error if it fails
+
+	// unmarshal the payload, returning an error if it fails
 	if err := json.Unmarshal(body, &p); err != nil {
 		log.Printf("invalid payload: %v\n", err)
 		return nil, errors.New("invalid payload")

@@ -17,6 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	badData = "8J+ZifCfmYjwn5mK" // base64 encoded monkeys
+)
+
 func TestNewPayloadFromReader(T *testing.T) {
 	T.Parallel()
 
@@ -116,7 +120,7 @@ func TestNewValidator(T *testing.T) {
 		t.Parallel()
 
 		example := &hashmap.Payload{
-			Data:      "8J+ZifCfmYjwn5mK", // base64 encoded monkeys
+			Data:      badData,
 			Signature: "xYUd7E99i5yYVg1IfsgpjpmTL1R5lqB1B2R+TqpibGuytHQ4p1oK4HKeYDJkBP3u1F/132LtOuLmOqqriqfMAA==",
 			PublicKey: "9HYoFN26rgJ8NSEGHshlmt+OwKmJrMAWJM1cAKyGbeo=",
 		}

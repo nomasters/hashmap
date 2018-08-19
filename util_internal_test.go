@@ -1,9 +1,5 @@
 package hashmap
 
-import (
-	"errors"
-)
-
 const (
 	examplePrivateKeyPath = "example_files/priv.key"
 	exampleValidPayload   = `
@@ -13,6 +9,8 @@ const (
 			"pubkey": "9HYoFN26rgJ8NSEGHshlmt+OwKmJrMAWJM1cAKyGbeo="
 		}
 	`
+
+	tooMuchData = "eyJtZXNzYWdlIjoiUW1GamIyNGdhWEJ6ZFcwZ1pHOXNiM0lnWVcxbGRDQjBiMjVuZFdVZ1ozSnZkVzVrSUhKdmRXNWtJSE5vYjNWc1pHVnlJR0pwYkhSdmJtY2dZbkpsYzJGdmJHRXNJR0poWTI5dUlHTm9kV05yTGlCVGQybHVaU0IwY21rdGRHbHdJR0psWldZZ2NtbGljeXdnWTJGd2FXTnZiR0VnWW5KbGMyRnZiR0VnYzJGc1lXMXBJSFIxY21SMVkydGxiaUJqYjNKdVpXUWdZbVZsWmlCclpYWnBiaUJqZFhCcGJTQjBMV0p2Ym1VZ2MzQmhjbVVnY21saWN5Qm9ZVzFpZFhKblpYSWdabkpoYm10bWRYSjBaWElnWTJoMVkyc3VJRUZzWTJGMGNtRWdjMkZzWVcxcElIUXRZbTl1WlNCaVlXTnZiaTRnUW1GamIyNGdZV3hqWVhSeVlTQnlkVzF3SUdKdmRXUnBiaUJpWVd4c0lIUnBjQ0JoYm1SdmRXbHNiR1VnYUdGdElHTm9kV05ySUdaeVlXNXJablZ5ZEdWeUlITm9ZVzVySUhabGJtbHpiMjRnWW5KbGMyRnZiR0VnYkdWaVpYSnJZWE1nWW1sc2RHOXVaeTRnVTNCaGNtVWdjbWxpY3lCemFHOXlkQ0J5YVdKeklHTmhjR2xqYjJ4aElIQnZjbXNnWW1Wc2JIa2dZbTkxWkdsdUxpQlVjbWt0ZEdsd0lHeGxZbVZ5YTJGeklHcHZkMndnWm5KaGJtdG1kWEowWlhJZ1kyaHBZMnRsYmlCbWFXeGxkQ0J0YVdkdWIyNHVJRVpwYkdWMElHMXBaMjV2YmlCd2FXTmhibWhoSUdKbFpXWWdiR1ZpWlhKcllYTWdZblZtWm1Gc2J5QmljbVZ6WVc5c1lTd2djRzl5YXlCaVpXeHNlU0JxWlhKcmVTQmpZWEJwWTI5c1lTQnphRzkxYkdSbGNpQjBkWEprZFdOclpXNHVJQT09IiwidGltZXN0YW1wIjoxNTM0NDc3MjMwLCJ0dGwiOjg2NDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9"
 )
 
 var (
@@ -22,9 +20,3 @@ var (
 		PublicKey: "9HYoFN26rgJ8NSEGHshlmt+OwKmJrMAWJM1cAKyGbeo=",
 	}
 )
-
-type errorReader struct{}
-
-func (er errorReader) Read(b []byte) (int, error) {
-	return 0, errors.New("arbitrary")
-}
