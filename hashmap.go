@@ -214,7 +214,8 @@ func (d Data) ValidateTimeStamp() error {
 	diff := now.Sub(timeStamp)
 
 	// get absolute value of time difference
-	if diff.Seconds() < 0 {
+	ds := diff.Seconds()
+	if ds < 0 {
 		diff = -diff
 	}
 
@@ -252,11 +253,12 @@ func ValidateMultiHash(hash string) error {
 		return errors.New("multiHash Decode failed")
 	}
 
-	dh, err := multihash.Decode(mh)
-	if err != nil {
-		log.Printf("%v failed to decode multihash with error: %s\n", hash, err)
-		return errors.New("multiHash Decode failed")
-	}
+	// the `multihash.FromB58String` call above calls this function and returns the
+	//  error if it's not nil, so we can safely ignore the error here
+	dh, _ := multihash.Decode(mh)
+
+	x := string(dh.Digest)
+	func(y string){}(x)
 
 	if dh.Length != 32 {
 		return errors.New("multiHash length invalid")

@@ -2,7 +2,7 @@ module github.com/nomasters/hashmap
 
 require (
 	github.com/BurntSushi/toml v0.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/gxed/hashland v0.0.0-20180221191214-d9f6b97f8db2 // indirect
@@ -25,9 +25,9 @@ require (
 	github.com/spf13/pflag v1.0.2 // indirect
 	github.com/spf13/viper v1.1.0
 	github.com/stretchr/testify v1.2.2
-	golang.org/x/crypto v0.0.0-20180808211826-de0752318171
+	golang.org/x/crypto v0.0.0-20180816225734-aabede6cba87
 	golang.org/x/net v0.0.0-20180816102801-aaf60122140d // indirect
-	golang.org/x/sys v0.0.0-20180815093151-14742f9018cd // indirect
+	golang.org/x/sys v0.0.0-20180816055513-1c9583448a9c // indirect
 	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
 )
