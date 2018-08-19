@@ -18,8 +18,8 @@ const payloadCtxKey ctxKey = 0
 
 // ServerOptions for the hashMap Server
 type ServerOptions struct {
-	Port    string
-	Storage string
+	Port           string
+	StorageOptions StorageOptions
 }
 
 type SubmitSuccessResponse struct {
@@ -42,10 +42,14 @@ func Run(opts ServerOptions) {
 		opts.Port = DefaultPort
 	}
 
-	s, _ = NewStorage(MemoryStorage, nil)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	opts.StorageOptions.Address = ":6379"
+	log.Println("help")
+	// s, _ = NewStorage(MemoryStorage, nil)
+	st, err := NewStorage(RedisStorage, opts.StorageOptions)
+	s = st
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Timeout(ServerTimeout))
@@ -98,6 +102,7 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.Set(hash, pwm); err != nil {
+		log.Println(err)
 		http.Error(w, "internal error saving payload", 500)
 		return
 	}

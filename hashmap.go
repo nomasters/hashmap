@@ -39,7 +39,7 @@ type Payload struct {
 // that use it.
 type PayloadWithMetadata struct {
 	Payload
-	Metadata map[string]interface{}
+	Metadata map[string]string
 }
 
 // Data is the struct for the Data in a Payload. It contains all data that is
