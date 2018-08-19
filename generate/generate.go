@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/nomasters/hashmap"
+
 	"golang.org/x/crypto/nacl/sign"
 )
 

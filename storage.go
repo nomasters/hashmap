@@ -28,10 +28,10 @@ func NewStorage(e Engine, opts StorageOptions) (Storage, error) {
 	case MemoryStorage:
 		return NewMemoryStore(), nil
 	case RedisStorage:
+		return nil, nil
 	default:
 		return nil, errors.New("invalid storage engine")
 	}
-	return nil, errors.New("something went wrong while creating new storage")
 }
 
 // Storage is the primary interface for interacting with Payload and PayloadMetaData
@@ -40,6 +40,8 @@ type Storage interface {
 	Set(key string, value PayloadWithMetadata) error
 	Delete(key string) error
 }
+
+var _ Storage = (*MemoryStore)(nil)
 
 // MemoryStore  is the primary in-memory data storage and retrieval struct
 type MemoryStore struct {
