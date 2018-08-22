@@ -1,15 +1,13 @@
-package analyze
+package hashmap
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/nomasters/hashmap"
 )
 
 // Payload analyzes a payload and prints results to stdOut
-func Payload(input []byte) error {
-	p := hashmap.Payload{}
+func AnalyzePayload(input []byte) error {
+	p := Payload{}
 	if err := json.Unmarshal(input, &p); err != nil {
 		return fmt.Errorf("invalid payload: %v\n", err)
 	}
@@ -52,7 +50,7 @@ func Payload(input []byte) error {
 	return nil
 }
 
-func verifyChecker(p hashmap.Payload) string {
+func verifyChecker(p Payload) string {
 	status := "PASS"
 	if err := p.Verify(); err != nil {
 		status = "FAIL - " + err.Error()
@@ -60,7 +58,7 @@ func verifyChecker(p hashmap.Payload) string {
 	return status
 }
 
-func ttlChecker(d hashmap.Data) string {
+func ttlChecker(d Data) string {
 	status := "PASS"
 	if err := d.ValidateTTL(); err != nil {
 		status = "FAIL - " + err.Error()
@@ -68,7 +66,7 @@ func ttlChecker(d hashmap.Data) string {
 	return status
 }
 
-func timeStampChecker(d hashmap.Data) string {
+func timeStampChecker(d Data) string {
 	status := "PASS"
 	if err := d.ValidateTimeStamp(); err != nil {
 		status = "FAIL - " + err.Error()
@@ -76,7 +74,7 @@ func timeStampChecker(d hashmap.Data) string {
 	return status
 }
 
-func dataSizeChecker(d hashmap.Data) string {
+func dataSizeChecker(d Data) string {
 	status := "PASS"
 	if err := d.ValidateMessageSize(); err != nil {
 		status = "FAIL - " + err.Error()

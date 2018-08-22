@@ -77,13 +77,23 @@ func initConfig() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
-		// Search config in home directory with name ".hashmap" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".hashmap")
+		// get the configuration file from the current directory
+		viper.AddConfigPath(".")
+		viper.SetConfigName("hashmap")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	// support ENV for killcord settings
+	viper.SetEnvPrefix("hashmap")
+	viper.BindEnv("storage.engine", "HASHMAP_STORAGE_ENGINE")
+	viper.BindEnv("storage.endpoint", "HASHMAP_STORAGE_ENDPOINT")
+	viper.BindEnv("storage.auth", "HASHMAP_STORAGE_AUTH")
+	viper.BindEnv("storage.maxIdle", "HASHMAP_STORAGE_MAXIDLE")
+	viper.BindEnv("storage.maxActive", "HASHMAP_STORAGE_MAXACTIVE")
+	viper.BindEnv("storage.idleTimeout", "HASHMAP_STORAGE_IDLETIMEOUT")
+	viper.BindEnv("storage.wait", "HASHMAP_STORAGE_WAIT")
+	viper.BindEnv("storage.maxConnLifetime", "HASHMAP_STORAGE_MAXCONNLIFETIME")
+
+	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

@@ -13,14 +13,21 @@ import (
 
 type Engine int
 
-type StorageOptions struct {
-	Address string
-}
-
 const (
 	MemoryStorage Engine = iota
 	RedisStorage
 )
+
+type StorageOptions struct {
+	Engine          Engine
+	Endpoint        string
+	Auth            string
+	MaxIdle         int
+	MaxActive       int
+	IdleTimeout     time.Duration
+	Wait            bool
+	MaxConnLifetime time.Duration
+}
 
 const MetadataPrefix = "meta-"
 
@@ -34,12 +41,11 @@ func (s Engine) String() string {
 }
 
 // NewStorage is a helper function used for configuring supported storage engines
-func NewStorage(e Engine, opts StorageOptions) (Storage, error) {
-	switch e {
+func NewStorage(opts StorageOptions) (Storage, error) {
+	switch opts.Engine {
 	case MemoryStorage:
 		return NewMemoryStore(), nil
 	case RedisStorage:
-
 		return NewRedisStore(opts), nil
 	default:
 		return nil, errors.New("invalid storage engine")
@@ -105,7 +111,7 @@ func NewRedisStore(opts StorageOptions) *RedisStore {
 		pool: &redis.Pool{
 			MaxIdle:     3,
 			IdleTimeout: 240 * time.Second,
-			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", opts.Address) },
+			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", opts.Endpoint) },
 		},
 	}
 }
@@ -155,11 +161,11 @@ func (r *RedisStore) Set(key string, value PayloadWithMetadata) error {
 	}
 	c := r.pool.Get()
 	defer c.Close()
-	log.Println("made it here")
 	// atomic blog for writing all hash values and then setting TTL
 	c.Send("MULTI")
 	c.Send("HSET", key, "payload", string(mp))
 
+	// add prefix to hash key to make it easy to parse
 	for k, v := range value.Metadata {
 		mk := MetadataPrefix + k
 		c.Send("HSET", key, mk, v)

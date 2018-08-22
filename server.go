@@ -34,6 +34,18 @@ var (
 	s Storage
 )
 
+// initStorage takes a StorageOptions stuct and sets the globally scoped
+// Storage interface for use by the server
+func initStorage(opts StorageOptions) {
+	var err error
+	opts.Engine = RedisStorage
+	opts.Endpoint = ":6379"
+	s, err = NewStorage(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // Run takes an Options struct and a server running on a specified port
 // TODO: add TLS support
 // TODO: add middleware such as rate limiting and logging
@@ -42,14 +54,7 @@ func Run(opts ServerOptions) {
 		opts.Port = DefaultPort
 	}
 
-	opts.StorageOptions.Address = ":6379"
-	log.Println("help")
-	// s, _ = NewStorage(MemoryStorage, nil)
-	st, err := NewStorage(RedisStorage, opts.StorageOptions)
-	s = st
-	if err != nil {
-		log.Fatal(err)
-	}
+	initStorage(opts.StorageOptions)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Timeout(ServerTimeout))

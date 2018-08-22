@@ -30,6 +30,7 @@ import (
 
 	"github.com/nomasters/hashmap"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // runCmd represents the run command
@@ -39,6 +40,7 @@ var runCmd = &cobra.Command{
 	Long:  `Runs the hashmap server`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("starting hashmap server version: %v running on port: %v\n", hashmap.Version, hashmap.DefaultPort)
+
 		opts := hashmap.ServerOptions{
 			Port: hashmap.DefaultPort,
 		}
@@ -58,4 +60,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func newServerOptions() hashmap.ServerOptions {
+
 }
