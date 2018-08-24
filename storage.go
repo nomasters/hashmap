@@ -11,13 +11,17 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
+// Engine is the enum type for StorageEngine
 type Engine int
 
+// Enum types for Storage Engine
 const (
 	MemoryStorage Engine = iota
 	RedisStorage
 )
 
+// StorageOptions are used to bootstrap a new StorageEngine. Currently this is intended for Redis, but could be
+// expanded to other storage types in the future.
 type StorageOptions struct {
 	Engine          Engine
 	Endpoint        string
@@ -29,8 +33,11 @@ type StorageOptions struct {
 	MaxConnLifetime time.Duration
 }
 
-const MetadataPrefix = "meta-"
-const DefaultRedisAddress = ":6379"
+// Storage Defaults
+const (
+	MetadataPrefix      = "meta-"
+	DefaultRedisAddress = ":6379"
+)
 
 // String is used to pretty print storage engine constants
 func (s Engine) String() string {
@@ -64,7 +71,6 @@ func NewStorage(opts StorageOptions) (Storage, error) {
 	default:
 		return nil, errors.New("invalid storage engine")
 	}
-	return nil, errors.New("something went wrong while creating new storage")
 }
 
 // Storage is the primary interface for interacting with Payload and PayloadMetaData

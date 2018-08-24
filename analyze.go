@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Payload analyzes a payload and prints results to stdOut
+// AnalyzePayload analyzes a payload and prints results to stdOut
 func AnalyzePayload(input []byte) error {
 	p := Payload{}
 	if err := json.Unmarshal(input, &p); err != nil {
