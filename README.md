@@ -23,7 +23,7 @@ The design goals were to allow a submitter to randomly generate `ed25519` keys t
 
 A tool like `hashmap` is useful as a light-weight and mobile device friendly mutable storage endpoint. This tool is heavily inspired by IPNS, the mutable store used by the IPFS project to point to specific IPFS hashes.
 
-One benefit of `hashmap` being decoupled from IPFS specifically is that its `message` store supports client-size encryption and therefore, a submitter who obfuscates the source IP through an anomemity  network like TOR and encrypts its `message` client-side can can publicly store mutable data without the `hashmap` server having knowledge or origin of the submission nor contents of the message.
+One benefit of `hashmap` being decoupled from IPFS specifically is that its `message` store supports client-side encryption and therefore, a submitter who obfuscates the source IP through an anomemity  network like TOR and encrypts its `message` client-side can can publicly store mutable data without the `hashmap` server having knowledge or origin of the submission nor contents of the message.
 
 features:
 
