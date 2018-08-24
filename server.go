@@ -3,8 +3,10 @@ package hashmap
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -13,48 +15,83 @@ import (
 // ctxKey is an unexported context key type for use with ctx
 type ctxKey int
 
+// Server Defaults
+const (
+	DefaultServerTimeout = 15 * time.Second
+	DefaultPort          = 3000
+)
+
 // payloadCtxKey is used to give payload a collision-free key
 const payloadCtxKey ctxKey = 0
-
-// ServerOptions for the hashMap Server
-type ServerOptions struct {
-	Port    string
-	Storage string
-}
-
-type SubmitSuccessResponse struct {
-	Endpoint string `json:"endpoint"`
-}
-
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
 
 var (
 	s Storage
 )
 
+// ServerOptions for the hashMap Server.
+type ServerOptions struct {
+	Host     string
+	Port     int
+	TLS      bool
+	CertFile string
+	KeyFile  string
+	Storage  StorageOptions
+}
+
+// SubmitSuccessResponse is a simple struct for json formatted submission respones
+type SubmitSuccessResponse struct {
+	Endpoint string `json:"endpoint"`
+}
+
+// ErrorResponseis a simple struct for json formatted error respones
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// AddrString returns a string formatted as expected by the net libraries in go.
+func (opts ServerOptions) AddrString() string {
+	port := opts.Port
+	if port == 0 {
+		port = DefaultPort
+	}
+	return fmt.Sprintf("%v:%v", opts.Host, port)
+}
+
+// initStorage takes a StorageOptions stuct and sets the globally scoped
+// Storage interface for use by the server
+func initStorage(opts StorageOptions) {
+	var err error
+	s, err = NewStorage(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // Run takes an Options struct and a server running on a specified port
-// TODO: add TLS support
 // TODO: add middleware such as rate limiting and logging
 func Run(opts ServerOptions) {
-	if opts.Port == "" {
-		opts.Port = DefaultPort
-	}
 
-	s, _ = NewStorage(MemoryStorage, nil)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	// configured globally scoped storage interface
+	initStorage(opts.Storage)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Timeout(ServerTimeout))
+	r.Use(middleware.Timeout(DefaultServerTimeout))
 	r.Post("/", submitHandleFunc)
 	r.Route("/{pkHash}", func(r chi.Router) {
 		r.Use(pkHashCtx)
 		r.Get("/", getPayloadHandleFunc)
 	})
-	http.ListenAndServe(opts.Port, r)
+
+	// run server either in http or https mode
+	if opts.TLS {
+		if opts.CertFile == "" || opts.KeyFile == "" {
+			log.Fatal("KeyFile and CertFile are required server options to run in TLS mode")
+		}
+		http.ListenAndServeTLS(opts.AddrString(), opts.CertFile, opts.KeyFile, r)
+	} else {
+		log.Println("WARNING: running in NON-TLS MODE, this is not recommended.")
+		http.ListenAndServe(opts.AddrString(), r)
+	}
 }
 
 // submitHandleFunc reads and validates a Payload from r.Body and runs a series of
@@ -98,6 +135,7 @@ func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.Set(hash, pwm); err != nil {
+		log.Println(err)
 		http.Error(w, "internal error saving payload", 500)
 		return
 	}

@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/nomasters/hashmap"
-	"github.com/nomasters/hashmap/generate"
 	"github.com/spf13/cobra"
 )
 
@@ -50,10 +49,10 @@ var generateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch args[0] {
 		case "key":
-			fmt.Println(base64.StdEncoding.EncodeToString(generate.Key()))
+			fmt.Println(base64.StdEncoding.EncodeToString(hashmap.GenerateKey()))
 		case "payload":
 
-			opts := generate.Options{
+			opts := hashmap.GeneratePayloadOptions{
 				Message:   message,
 				TTL:       ttl,
 				Timestamp: timestamp,
@@ -68,7 +67,7 @@ var generateCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			payload, err := generate.Payload(opts, pk)
+			payload, err := hashmap.GeneratePayload(opts, pk)
 			if err != nil {
 				log.Fatal(err)
 			}
