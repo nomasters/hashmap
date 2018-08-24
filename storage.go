@@ -30,14 +30,28 @@ type StorageOptions struct {
 }
 
 const MetadataPrefix = "meta-"
+const DefaultRedisAddress = ":6379"
 
 // String is used to pretty print storage engine constants
 func (s Engine) String() string {
 	names := []string{
-		"Memory",
-		"Redis",
+		"memory",
+		"redis",
 	}
 	return names[s]
+}
+
+// GetStorageEngineCode takes a storage engine name in the form of a string
+// and returns and Engine or an error
+func GetStorageEngineCode(n string) (Engine, error) {
+	switch n {
+	case "memory":
+		return MemoryStorage, nil
+	case "redis":
+		return RedisStorage, nil
+	default:
+		return 0, errors.New("invalid storage engine name")
+	}
 }
 
 // NewStorage is a helper function used for configuring supported storage engines
@@ -106,12 +120,34 @@ type RedisStore struct {
 	pool *redis.Pool
 }
 
+// NewRedisStore returns a RedisStore with StorageOptions mapped to Redis Pool settings.
+// Optionally, if Auth is set, Auth is configured on Dial
 func NewRedisStore(opts StorageOptions) *RedisStore {
+	addr := opts.Endpoint
+	if addr == "" {
+		addr = DefaultRedisAddress
+	}
+
 	return &RedisStore{
 		pool: &redis.Pool{
-			MaxIdle:     3,
-			IdleTimeout: 240 * time.Second,
-			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", opts.Endpoint) },
+			MaxIdle:         opts.MaxIdle,
+			MaxActive:       opts.MaxActive,
+			IdleTimeout:     opts.IdleTimeout,
+			Wait:            opts.Wait,
+			MaxConnLifetime: opts.MaxConnLifetime,
+			Dial: func() (redis.Conn, error) {
+				c, err := redis.Dial("tcp", addr)
+				if err != nil {
+					return nil, err
+				}
+				if opts.Auth != "" {
+					if _, err := c.Do("AUTH", opts.Auth); err != nil {
+						c.Close()
+						return nil, err
+					}
+				}
+				return c, nil
+			},
 		},
 	}
 }

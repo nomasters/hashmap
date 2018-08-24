@@ -29,7 +29,6 @@ import (
 	"fmt"
 	"os"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -71,19 +70,18 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
 		// get the configuration file from the current directory
 		viper.AddConfigPath(".")
 		viper.SetConfigName("hashmap")
 	}
 
-	// support ENV for killcord settings
+	// support ENV for hashmap settings
 	viper.SetEnvPrefix("hashmap")
+	viper.BindEnv("server.host", "HASHMAP_SERVER_HOST")
+	viper.BindEnv("server.port", "HASHMAP_SERVER_PORT")
+	viper.BindEnv("server.tls", "HASHMAP_SERVER_TLS")
+	viper.BindEnv("server.certfile", "HASHMAP_SERVER_CERTFILE")
+	viper.BindEnv("server.keyfile", "HASHMAP_SERVER_KEYFILE")
 	viper.BindEnv("storage.engine", "HASHMAP_STORAGE_ENGINE")
 	viper.BindEnv("storage.endpoint", "HASHMAP_STORAGE_ENDPOINT")
 	viper.BindEnv("storage.auth", "HASHMAP_STORAGE_AUTH")

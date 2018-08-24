@@ -27,6 +27,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/nomasters/hashmap"
 	"github.com/spf13/cobra"
@@ -39,29 +41,95 @@ var runCmd = &cobra.Command{
 	Short: "Runs the hashmap server",
 	Long:  `Runs the hashmap server`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("starting hashmap server version: %v running on port: %v\n", hashmap.Version, hashmap.DefaultPort)
+		fmt.Printf("starting hashmap server version: %v running on port: %v\n", hashmap.Version, viper.GetInt("server.port"))
+
+		seCode, err := hashmap.GetStorageEngineCode(viper.GetString("storage.engine"))
+		if err != nil {
+			fmt.Println("invalide storage engine type, exiting")
+			os.Exit(1)
+		}
 
 		opts := hashmap.ServerOptions{
-			Port: hashmap.DefaultPort,
+			Host:     viper.GetString("server.host"),
+			Port:     viper.GetInt("server.port"),
+			TLS:      viper.GetBool("server.TLS"),
+			CertFile: viper.GetString("server.certfile"),
+			KeyFile:  viper.GetString("server.keyfile"),
+			Storage: hashmap.StorageOptions{
+				Engine:          seCode,
+				Endpoint:        viper.GetString("storage.endpoint"),
+				Auth:            viper.GetString("storage.auth"),
+				MaxIdle:         viper.GetInt("storage.maxidle"),
+				MaxActive:       viper.GetInt("storage.maxactive"),
+				IdleTimeout:     time.Duration(viper.GetInt("storage.idletimeout")) * time.Second,
+				Wait:            viper.GetBool("storage.wait"),
+				MaxConnLifetime: time.Duration(viper.GetInt("storage.maxconnlifetime")) * time.Second,
+			},
 		}
 		hashmap.Run(opts)
 	},
 }
 
+// server struct is used for holding flag values
+var server struct {
+	host     string
+	port     int
+	tls      bool
+	certFile string
+	keyFile  string
+}
+
+// stroage struct is used for holding flag values
+var storage struct {
+	engine          string
+	endpoint        string
+	auth            string
+	maxIdle         int
+	maxActive       int
+	idleTimeout     int
+	wait            bool
+	maxConnLifetime int
+}
+
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	// Here you will define your flags and configuration settings.
+	runCmd.PersistentFlags().IntVarP(&server.port, "port", "", hashmap.DefaultPort, "The server port.")
+	viper.BindPFlag("server.port", runCmd.PersistentFlags().Lookup("port"))
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// runCmd.PersistentFlags().String("foo", "", "A help for foo")
+	runCmd.PersistentFlags().StringVarP(&server.host, "host", "", "", "The server hostname or ip address.")
+	viper.BindPFlag("server.host", runCmd.PersistentFlags().Lookup("host"))
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+	runCmd.PersistentFlags().BoolVarP(&server.tls, "tls", "", true, "Boolean switch for running server in TLS mode.")
+	viper.BindPFlag("server.tls", runCmd.PersistentFlags().Lookup("tls"))
 
-func newServerOptions() hashmap.ServerOptions {
+	runCmd.PersistentFlags().StringVarP(&server.certFile, "certfile", "", "", "Path the TLS cert file.")
+	viper.BindPFlag("server.certfile", runCmd.PersistentFlags().Lookup("certfile"))
 
+	runCmd.PersistentFlags().StringVarP(&server.keyFile, "keyfile", "", "", "Path the TLS key file.")
+	viper.BindPFlag("server.keyfile", runCmd.PersistentFlags().Lookup("keyfile"))
+
+	runCmd.PersistentFlags().StringVarP(&storage.engine, "engine", "", "memory", "Storage Engine Mode.")
+	viper.BindPFlag("storage.engine", runCmd.PersistentFlags().Lookup("engine"))
+
+	runCmd.PersistentFlags().StringVarP(&storage.endpoint, "endpoint", "", "", "Storage endpoint string.")
+	viper.BindPFlag("storage.endpoint", runCmd.PersistentFlags().Lookup("endpoint"))
+
+	runCmd.PersistentFlags().StringVarP(&storage.auth, "auth", "", "", "Storage auth string.")
+	viper.BindPFlag("storage.auth", runCmd.PersistentFlags().Lookup("auth"))
+
+	runCmd.PersistentFlags().IntVarP(&storage.maxIdle, "max-idle", "", 0, "Storage max idle in seconds.")
+	viper.BindPFlag("storage.maxidle", runCmd.PersistentFlags().Lookup("max-idle"))
+
+	runCmd.PersistentFlags().IntVarP(&storage.maxActive, "max-active", "", 0, "Storage max active in seconds.")
+	viper.BindPFlag("storage.maxactive", runCmd.PersistentFlags().Lookup("max-active"))
+
+	runCmd.PersistentFlags().IntVarP(&storage.idleTimeout, "idle-timeout", "", 0, "Storage session idle timeout in seconds.")
+	viper.BindPFlag("storage.idletimeout", runCmd.PersistentFlags().Lookup("idle-timeout"))
+
+	runCmd.PersistentFlags().BoolVarP(&storage.wait, "wait", "", true, "Storage session wait boolean.")
+	viper.BindPFlag("server.wait", runCmd.PersistentFlags().Lookup("wait"))
+
+	runCmd.PersistentFlags().IntVarP(&storage.maxConnLifetime, "max-conn-lifetime", "", 0, "Storage max connection lifetime in seconds.")
+	viper.BindPFlag("storage.maxconnlifetime", runCmd.PersistentFlags().Lookup("max-conn-lifetime"))
 }

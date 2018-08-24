@@ -21,8 +21,6 @@ const (
 	Version          = "0.0.1"
 	MaxPostBodySize  = 2000 // 2KB
 	MaxSubmitDrift   = 15 * time.Second
-	ServerTimeout    = 15 * time.Second
-	DefaultPort      = ":3000"
 	MaxMessageBytes  = 512
 	Blake2b256Code   = 45600
 )
