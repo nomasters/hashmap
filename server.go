@@ -38,12 +38,12 @@ type ServerOptions struct {
 	Storage  StorageOptions
 }
 
-// SubmitSuccessResponse is a simple struct for json formatted submission respones
+// SubmitSuccessResponse is a simple struct for json formatted submission response
 type SubmitSuccessResponse struct {
 	Endpoint string `json:"endpoint"`
 }
 
-// ErrorResponseis a simple struct for json formatted error respones
+// ErrorResponse a simple struct for json formatted error response
 type ErrorResponse struct {
 	Error string `json:"error"`
 }

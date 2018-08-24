@@ -32,7 +32,7 @@ type Payload struct {
 	PublicKey string `json:"pubkey"`
 }
 
-// PayloadWithMetaData is a struct that contains a Payload and related Metadata.
+// PayloadWithMetadata is a struct that contains a Payload and related Metadata.
 // The Metadata is is a map[string]interface{} to give flexibility to systems
 // that use it.
 type PayloadWithMetadata struct {
