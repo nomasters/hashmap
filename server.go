@@ -17,7 +17,7 @@ type ctxKey int
 
 // Server Defaults
 const (
-	DefaultServerTimeout = 15 * time.Second
+	DefaultServerTimeout = 5 * time.Second
 	DefaultPort          = 3000
 )
 
@@ -77,6 +77,7 @@ func Run(opts ServerOptions) {
 	r := chi.NewRouter()
 	r.Use(middleware.Timeout(DefaultServerTimeout))
 	r.Post("/", submitHandleFunc)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"status": "healthy"}`)) })
 	r.Route("/{pkHash}", func(r chi.Router) {
 		r.Use(pkHashCtx)
 		r.Get("/", getPayloadHandleFunc)
