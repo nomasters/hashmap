@@ -1,4 +1,4 @@
-![hashmap logo](images/hashmap-logo-black-text-small.svg)
+![hashmap logo](images/hashmap-logo-black-text-quarter.svg)
 
 # hashmap
 a light-weight cryptographically signed key value store inspired by IPNS
