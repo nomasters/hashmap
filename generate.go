@@ -31,7 +31,7 @@ func GeneratePayload(opts GeneratePayloadOptions, pk []byte) ([]byte, error) {
 	}
 
 	if opts.Timestamp == 0 {
-		opts.Timestamp = time.Now().Unix()
+		opts.Timestamp = time.Now().UnixNano()
 	}
 
 	message := base64.StdEncoding.EncodeToString([]byte(opts.Message))

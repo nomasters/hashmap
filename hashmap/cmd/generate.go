@@ -85,5 +85,5 @@ func init() {
 
 	generateCmd.PersistentFlags().StringVarP(&message, "message", "m", "", "The message to be stored in data of payload")
 	generateCmd.PersistentFlags().Int64VarP(&ttl, "ttl", "t", hashmap.DataTTLDefault, "ttl in seconds for payload")
-	generateCmd.PersistentFlags().Int64VarP(&timestamp, "timestamp", "s", time.Now().Unix(), "timestamp for message in unix-time")
+	generateCmd.PersistentFlags().Int64VarP(&timestamp, "timestamp", "s", time.Now().UnixNano(), "timestamp for message in unix-time")
 }

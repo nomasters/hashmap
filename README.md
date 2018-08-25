@@ -49,7 +49,7 @@ The contents of `data` decoded is:
 ```
 {
   "message":   "BASE_64_ENCODED_STRING",
-  "timestamp": 1534162383,
+  "timestamp": 1535211171864296000,
   "ttl":       86400,
   "sigMethod": "nacl-sign-ed25519",
   "version":   "0.0.1"
@@ -57,7 +57,7 @@ The contents of `data` decoded is:
 ```
 
 - `message` is a `BASE_64_ENCODED_STRING` provided by the submitter. This may contain anything as long as the message bytes is less than 512 bytes.
-- `timestamp` is the unix-time timestamp. Hashmap Server allows MaxSubmitDrift of 15 seconds. This prevents old payloads from overwriting newer payloads.
+- `timestamp` is unix-time in nanoseconds. Hashmap Server allows MaxSubmitDrift of 15 seconds. This prevents old payloads from overwriting newer payloads.
 - `ttl` - is the time to live in seconds for the payload. If no TTL is set (or it is set to 0) hashmap defaults to 24 hours (86400 seconds ). A Maximum TTL of 1 week (604800 seconds) is permitted. Any TTL greater than 604800 will be rejected.
 - `sigMethod` outlines the method used to verify the signature. Currently only `nacl-sign-ed25519` is supported
 - `version` is used for handling potentially breaking changes in the future, but it isn't currently analyzed for acceptance.
@@ -168,7 +168,7 @@ hashmap generate payload --help
 an example of modifying the inputs is as follows:
 
 ```
-hashmap generate payload --message="{\"hello\":\"world\"}" --timestamp=1534121771 --ttl=5 < priv.key
+hashmap generate payload --message="{\"hello\":\"world\"}" --timestamp=1535211171864296000 --ttl=5 < priv.key
 ```
 
 you can save this ouput to a file as follows:
@@ -188,18 +188,18 @@ Payload
 -------
 
 {
-  "data": "eyJkYXRhIjoiZXlKb1pXeHNieUk2SW5kdmNteGtJbjA9IiwidGltZXN0YW1wIjoxNTM0MTYyMzgzLCJ0dGwiOjg2NDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9",
-  "sig": "h7clARjoYeh3Mmg7EOsKb0QVpvhKUYymFeZ7tFIyGqdNd5mt/QMmvtO/fWy9/nYbcDXQ0+37VFmhpBjMEFXlAQ==",
-  "pubkey": "z0CRLsemGDadzmzA9/3R3e4JkEtVZLOD+gAU7EtychQ="
+  "data": "eyJtZXNzYWdlIjoiZXlKamNubHdkRzhpT25zaWJXVjBhRzlrSWpvaWMyVmpjbVYwWW05NElpd2lZMmgxYm1zaU9qRTJNREF3ZlN3aWFHRnphQ0k2SW1VeFpqRTFNelJrTWpaa01pSXNJbkJoZVd4dllXUWlPaUoxYnpoYVVXVk5WV3hwT0dJclNXOUtRMUppTDI1UGQwMVhVR2RwT0dWRFpFVkNUWGRrYW1wNlIyWTNVVTFqWkdnMlRXVlFVbW9yV25CM1VGZHpOVmhxZFdOcE1tRXpSVFUzUTFWUGRIUjNTRUZIZHowaWZRPT0iLCJ0aW1lc3RhbXAiOjE1MzUyMTExNzE4NjQyOTYwMDAsInR0bCI6MzAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSJ9",
+  "sig": "s5tHkDsMfUQbsJGJf80lKdkI4kTEf9BJ3a1PCqSnYuH0aZ8kjeVG2SoGeeRsaXMNV4nDYlBddJkeQkGWort3Cg==",
+  "pubkey": "9DHEtybGV0LxFFV3WBFMZzrvyme/3o1pP9Q6SD5t3NA="
 }
 
 Data
 ----
 
 {
-  "message": "eyJoZWxsbyI6IndvcmxkIn0=",
-  "timestamp": 1534162383,
-  "ttl": 86400,
+  "message": "eyJjcnlwdG8iOnsibWV0aG9kIjoic2VjcmV0Ym94IiwiY2h1bmsiOjE2MDAwfSwiaGFzaCI6ImUxZjE1MzRkMjZkMiIsInBheWxvYWQiOiJ1bzhaUWVNVWxpOGIrSW9KQ1JiL25Pd01XUGdpOGVDZEVCTXdkamp6R2Y3UU1jZGg2TWVQUmorWnB3UFdzNVhqdWNpMmEzRTU3Q1VPdHR3SEFHdz0ifQ==",
+  "timestamp": 1535211171864296000,
+  "ttl": 300,
   "sigMethod": "nacl-sign-ed25519",
   "version": "0.0.1"
 }
@@ -207,7 +207,7 @@ Data
 Message
 -------
 
-{"hello":"world"}
+{"crypto":{"method":"secretbox","chunk":16000},"hash":"e1f1534d26d2","payload":"uo8ZQeMUli8b+IoJCRb/nOwMWPgi8eCdEBMwdjjzGf7QMcdh6MePRj+ZpwPWs5Xjuci2a3E57CUOttwHAGw="}
 
 Checker
 -------
