@@ -2,7 +2,7 @@
 
 # hashmap
 
-a RESTful, ephemeral, cryptographically signed, key-value store inspired by IPNS.
+an ephemeral, cryptographically signed, key-value store inspired by IPNS.
 
 [![CircleCI][1]][2] [![Go Report Card][3]][4]
 
