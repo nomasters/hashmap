@@ -31,6 +31,7 @@ type StorageOptions struct {
 	IdleTimeout     time.Duration
 	Wait            bool
 	MaxConnLifetime time.Duration
+	TLS             bool
 }
 
 // Storage Defaults
@@ -142,7 +143,9 @@ func NewRedisStore(opts StorageOptions) *RedisStore {
 			Wait:            opts.Wait,
 			MaxConnLifetime: opts.MaxConnLifetime,
 			Dial: func() (redis.Conn, error) {
-				c, err := redis.Dial("tcp", addr)
+				// TODO: DialTLSSkipVerify needs to be made to an optional param,
+				// this is a hack put in place because AWS ElasticCache failed to x509 verify
+				c, err := redis.Dial("tcp", addr, redis.DialUseTLS(opts.TLS), redis.DialTLSSkipVerify(true))
 				if err != nil {
 					return nil, err
 				}

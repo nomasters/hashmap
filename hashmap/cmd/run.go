@@ -64,6 +64,7 @@ var runCmd = &cobra.Command{
 				IdleTimeout:     time.Duration(viper.GetInt("storage.idletimeout")) * time.Second,
 				Wait:            viper.GetBool("storage.wait"),
 				MaxConnLifetime: time.Duration(viper.GetInt("storage.maxconnlifetime")) * time.Second,
+				TLS:             viper.GetBool("storage.tls"),
 			},
 		}
 		hashmap.Run(opts)
@@ -89,6 +90,7 @@ var storage struct {
 	idleTimeout     int
 	wait            bool
 	maxConnLifetime int
+	tls             bool
 }
 
 func init() {
@@ -132,4 +134,7 @@ func init() {
 
 	runCmd.PersistentFlags().IntVarP(&storage.maxConnLifetime, "max-conn-lifetime", "", 0, "Storage max connection lifetime in seconds.")
 	viper.BindPFlag("storage.maxconnlifetime", runCmd.PersistentFlags().Lookup("max-conn-lifetime"))
+
+	runCmd.PersistentFlags().BoolVarP(&storage.tls, "storage-tls", "", false, "Boolean switch for running storage in TLS mode.")
+	viper.BindPFlag("storage.tls", runCmd.PersistentFlags().Lookup("storage-tls"))
 }

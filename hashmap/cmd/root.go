@@ -90,6 +90,7 @@ func initConfig() {
 	viper.BindEnv("storage.idleTimeout", "HASHMAP_STORAGE_IDLETIMEOUT")
 	viper.BindEnv("storage.wait", "HASHMAP_STORAGE_WAIT")
 	viper.BindEnv("storage.maxConnLifetime", "HASHMAP_STORAGE_MAXCONNLIFETIME")
+	viper.BindEnv("storage.tls", "HASHMAP_STORAGE_TLS")
 
 	viper.AutomaticEnv()
 
