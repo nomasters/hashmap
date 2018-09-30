@@ -3,6 +3,7 @@ module github.com/nomasters/hashmap
 require (
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
+	github.com/go-chi/cors v1.0.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gxed/hashland v0.0.0-20180221191214-d9f6b97f8db2 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect

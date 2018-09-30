@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 )
 
 // ctxKey is an unexported context key type for use with ctx
@@ -75,6 +76,18 @@ func Run(opts ServerOptions) {
 	initStorage(opts.Storage)
 
 	r := chi.NewRouter()
+
+	// liberal CORS support for `hashmap-client-js`
+	cors := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		// ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           60,
+	})
+
+	r.Use(cors.Handler)
 	r.Use(middleware.Timeout(DefaultServerTimeout))
 	r.Post("/", submitHandleFunc)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"status": "healthy"}`)) })
