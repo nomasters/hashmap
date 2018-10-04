@@ -44,7 +44,7 @@ func GeneratePayload(opts GeneratePayloadOptions, pk []byte) ([]byte, error) {
 	}
 	data, err := json.Marshal(d)
 	if err != nil {
-		return nil, err
+		return []byte(""), err
 	}
 
 	var privateKey [64]byte
@@ -72,20 +72,6 @@ func GeneratePayload(opts GeneratePayloadOptions, pk []byte) ([]byte, error) {
 
 	return payload, nil
 
-}
-
-func GeneratePayloadBytes(opts Options, pk []byte) ([]byte, error) {
-	p, err := GeneratePayload(opts, pk)
-	if err != nil {
-		return nil, err
-	}
-
-	payload, err := json.Marshal(p)
-	if err != nil {
-		return []byte(""), err
-	}
-
-	return payload, nil
 }
 
 // GenerateKey returns a randomly generated ed25519 private key in bytes

@@ -24,10 +24,12 @@ const (
 func buildExamplePayload(t *testing.T, msg string) *Payload {
 	t.Helper()
 	pk := GenerateKey()
-	opts := Options{}
+	opts := GeneratePayloadOptions{}
 	p, err := GeneratePayload(opts, pk)
 	require.NoError(t, err)
-	return p
+	payload, err := NewPayloadFromReader(bytes.NewReader(p))
+	require.NoError(t, err)
+	return payload
 }
 
 var _ Storage = (*badStorage)(nil)
