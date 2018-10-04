@@ -21,8 +21,6 @@ const (
 	Version          = "0.0.1"
 	MaxPostBodySize  = 2000 // 2KB
 	MaxSubmitDrift   = 15 * time.Second
-	ServerTimeout    = 15 * time.Second
-	DefaultPort      = ":3000"
 	MaxMessageBytes  = 512
 	Blake2b256Code   = 45600
 )
@@ -34,12 +32,12 @@ type Payload struct {
 	PublicKey string `json:"pubkey"`
 }
 
-// PayloadWithMetaData is a struct that contains a Payload and related Metadata.
+// PayloadWithMetadata is a struct that contains a Payload and related Metadata.
 // The Metadata is is a map[string]interface{} to give flexibility to systems
 // that use it.
 type PayloadWithMetadata struct {
 	Payload
-	Metadata map[string]interface{}
+	Metadata map[string]string
 }
 
 // Data is the struct for the Data in a Payload. It contains all data that is
@@ -182,7 +180,7 @@ func (d Data) ValidateTTL() error {
 	// convert to duration
 	ttl := time.Duration(t) * time.Second
 
-	timeStamp := time.Unix(d.Timestamp, 0)
+	timeStamp := time.Unix(secondsAndNanoseconds(d.Timestamp))
 	now := time.Now()
 	diff := now.Sub(timeStamp)
 
@@ -210,7 +208,7 @@ func (d Data) ValidateMessageSize() error {
 // ValidateTimeStamp compares time.Now to message Timestamp. If the difference
 // exceeds MaxSubmitDrift, it returns an error. This is to prevent replay attacks.
 func (d Data) ValidateTimeStamp() error {
-	timeStamp := time.Unix(d.Timestamp, 0)
+	timeStamp := time.Unix(secondsAndNanoseconds(d.Timestamp))
 	now := time.Now()
 	diff := now.Sub(timeStamp)
 
@@ -267,4 +265,12 @@ func ValidateMultiHash(hash string) error {
 		return errors.New("pubKey hash length invalid")
 	}
 	return nil
+}
+
+// secondsAndNanoseconds takes a full time UnixNano int64 and returns the seconds and the nanoseconds
+// expected by the Unix() parser for the time library.
+func secondsAndNanoseconds(i int64) (s, n int64) {
+	s = i / 1000000000
+	n = i - (s * 1000000000)
+	return
 }

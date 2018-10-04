@@ -30,7 +30,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/nomasters/hashmap/analyze"
+	"github.com/nomasters/hashmap"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +44,7 @@ var analyzeCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		if err := analyze.Payload(input); err != nil {
+		if err := hashmap.AnalyzePayload(input); err != nil {
 			log.Fatalln(err)
 		}
 	},

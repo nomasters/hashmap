@@ -10,9 +10,9 @@ import (
 	"golang.org/x/crypto/nacl/sign"
 )
 
-// Options is a struct used for passing in Message, TTL, and Timestamp options
+// GeneratePayloadOptions is a struct used for passing in Message, TTL, and Timestamp options
 // and is used in conjunction with CLI flags
-type Options struct {
+type GeneratePayloadOptions struct {
 	Message   string
 	TTL       int64
 	Timestamp int64
@@ -20,7 +20,7 @@ type Options struct {
 
 // GeneratePayload takes an Options struct and the bytes of a private key
 // and returns a json encoded payload and an error
-func GeneratePayload(opts Options, pk []byte) (*Payload, error) {
+func GeneratePayload(opts GeneratePayloadOptions, pk []byte) ([]byte, error) {
 
 	if opts.Message == "" {
 		opts.Message = `{"content":"hello, world. This is data stored in HashMap."}`
@@ -31,7 +31,7 @@ func GeneratePayload(opts Options, pk []byte) (*Payload, error) {
 	}
 
 	if opts.Timestamp == 0 {
-		opts.Timestamp = time.Now().Unix()
+		opts.Timestamp = time.Now().UnixNano()
 	}
 
 	message := base64.StdEncoding.EncodeToString([]byte(opts.Message))
@@ -55,15 +55,23 @@ func GeneratePayload(opts Options, pk []byte) (*Payload, error) {
 	s := sign.Sign(nil, data, &privateKey)[:64]
 	sig := base64.StdEncoding.EncodeToString(s)
 
-	if _, valid := sign.Open(nil, append(s, data...), &publicKey); !valid {
-		return nil, errors.New("signature failed to validate")
-	}
-
-	return &Payload{
+	p := Payload{
 		Data:      base64.StdEncoding.EncodeToString(data),
 		Signature: sig,
 		PublicKey: base64.StdEncoding.EncodeToString(publicKey[:]),
-	}, nil
+	}
+
+	payload, err := json.Marshal(p)
+	if err != nil {
+		return []byte(""), err
+	}
+
+	if _, valid := sign.Open(nil, append(s, data...), &publicKey); !valid {
+		return []byte(""), errors.New("signature failed to validate")
+	}
+
+	return payload, nil
+
 }
 
 func GeneratePayloadBytes(opts Options, pk []byte) ([]byte, error) {
@@ -80,7 +88,7 @@ func GeneratePayloadBytes(opts Options, pk []byte) ([]byte, error) {
 	return payload, nil
 }
 
-// GenerateKey a randomly generated ed25519 private key in bytes
+// GenerateKey returns a randomly generated ed25519 private key in bytes
 func GenerateKey() []byte {
 	_, privKey, _ := sign.GenerateKey(rand.Reader)
 	return privKey[:]

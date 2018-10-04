@@ -52,7 +52,7 @@ var generateCmd = &cobra.Command{
 			fmt.Println(base64.StdEncoding.EncodeToString(hashmap.GenerateKey()))
 		case "payload":
 
-			opts := hashmap.Options{
+			opts := hashmap.GeneratePayloadOptions{
 				Message:   message,
 				TTL:       ttl,
 				Timestamp: timestamp,
@@ -67,7 +67,7 @@ var generateCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			payload, err := hashmap.GeneratePayloadBytes(opts, pk)
+			payload, err := hashmap.GeneratePayload(opts, pk)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -85,5 +85,5 @@ func init() {
 
 	generateCmd.PersistentFlags().StringVarP(&message, "message", "m", "", "The message to be stored in data of payload")
 	generateCmd.PersistentFlags().Int64VarP(&ttl, "ttl", "t", hashmap.DataTTLDefault, "ttl in seconds for payload")
-	generateCmd.PersistentFlags().Int64VarP(&timestamp, "timestamp", "s", time.Now().Unix(), "timestamp for message in unix-time")
+	generateCmd.PersistentFlags().Int64VarP(&timestamp, "timestamp", "s", time.Now().UnixNano(), "timestamp for message in unix-time")
 }

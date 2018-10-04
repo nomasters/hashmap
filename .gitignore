@@ -12,3 +12,4 @@ coverage.txt
 
 vendor
 .idea
+node_modules
