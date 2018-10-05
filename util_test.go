@@ -112,7 +112,7 @@ func buildTestPayload(t *testing.T, message string) hashmap.Payload {
 	opts := hashmap.GeneratePayloadOptions{
 		Message:   message,
 		TTL:       hashmap.DataTTLMax,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now().UnixNano(),
 	}
 
 	text, err := ioutil.ReadFile("example_files/priv.key")

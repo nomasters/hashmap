@@ -226,7 +226,7 @@ func TestData_ValidateTTL(T *testing.T) {
 		t.Parallel()
 
 		example := &hashmap.Data{
-			Timestamp: int64(time.Now().Unix()),
+			Timestamp: int64(time.Now().UnixNano()),
 			TTL:       hashmap.DataTTLMax,
 		}
 		actual := example.ValidateTTL()
@@ -237,7 +237,7 @@ func TestData_ValidateTTL(T *testing.T) {
 		t.Parallel()
 
 		example := &hashmap.Data{
-			Timestamp: int64(time.Now().Unix()),
+			Timestamp: int64(time.Now().UnixNano()),
 		}
 		actual := example.ValidateTTL()
 		assert.NoError(t, actual)
@@ -322,7 +322,7 @@ func TestData_ValidateTimeStamp(T *testing.T) {
 		d, err := p.GetData()
 		assert.NoError(t, err)
 
-		d.Timestamp = time.Now().Add(1 * time.Hour).Unix()
+		d.Timestamp = time.Now().Add(1 * time.Hour).UnixNano()
 		assert.Error(t, d.ValidateTimeStamp())
 	})
 
@@ -334,7 +334,7 @@ func TestData_ValidateTimeStamp(T *testing.T) {
 		d, err := p.GetData()
 		assert.NoError(t, err)
 
-		d.Timestamp = time.Now().Add(-24 * time.Hour).Unix()
+		d.Timestamp = time.Now().Add(-24 * time.Hour).UnixNano()
 		assert.Error(t, d.ValidateTimeStamp())
 	})
 }
