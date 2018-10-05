@@ -18,7 +18,7 @@ const (
 	DataTTLDefault   = 86400  // 1 day in seconds
 	DataTTLMax       = 604800 // 1 week in seconds
 	DefaultSigMethod = "nacl-sign-ed25519"
-	Version          = "0.0.1"
+	Version          = "0.0.3"
 	MaxPostBodySize  = 2000 // 2KB
 	MaxSubmitDrift   = 15 * time.Second
 	MaxMessageBytes  = 512
