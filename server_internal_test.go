@@ -48,7 +48,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 	T.Run("normal operation", func(t *testing.T) {
 		t.Parallel()
 
-		s, err := NewStorage(MemoryStorage, nil)
+		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
 		require.NoError(t, err)
 
 		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
@@ -57,7 +57,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
 		res := httptest.NewRecorder()
 
-		buildSubmitHandler(s)(res, req)
+		newSubmitHandleFunc(s)(res, req)
 
 		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
 		assert.NotEmpty(t, res.Body.String())
@@ -66,7 +66,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 	T.Run("with too large a message", func(t *testing.T) {
 		t.Skip() // TODO: figure this out
 
-		s, err := NewStorage(MemoryStorage, nil)
+		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
 		require.NoError(t, err)
 
 		p := buildExamplePayload(t, "")
@@ -87,7 +87,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(body))
 		res := httptest.NewRecorder()
 
-		buildSubmitHandler(s)(res, req)
+		newSubmitHandleFunc(s)(res, req)
 
 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
 	})
@@ -95,7 +95,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 	T.Run("with an invalid TTL", func(t *testing.T) {
 		t.Parallel()
 
-		s, err := NewStorage(MemoryStorage, nil)
+		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
 		require.NoError(t, err)
 
 		exampleBody, err := json.Marshal(examplePayload)
@@ -104,7 +104,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
 		res := httptest.NewRecorder()
 
-		buildSubmitHandler(s)(res, req)
+		newSubmitHandleFunc(s)(res, req)
 
 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
 		assert.Equal(t, res.Body.String(), "ttl exceeded\n")
@@ -113,13 +113,13 @@ func TestBuildSubmitHandler(T *testing.T) {
 	T.Run("with invalid body", func(t *testing.T) {
 		t.Parallel()
 
-		s, err := NewStorage(MemoryStorage, nil)
+		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
 		require.NoError(t, err)
 
 		req := httptest.NewRequest(http.MethodPost, "http://localhost", strings.NewReader(`lol this is bad`))
 		res := httptest.NewRecorder()
 
-		buildSubmitHandler(s)(res, req)
+		newSubmitHandleFunc(s)(res, req)
 
 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
 		assert.Equal(t, res.Body.String(), "invalid payload\n")
@@ -136,7 +136,7 @@ func TestBuildSubmitHandler(T *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
 		res := httptest.NewRecorder()
 
-		buildSubmitHandler(bs)(res, req)
+		newSubmitHandleFunc(bs)(res, req)
 
 		assert.Equal(t, http.StatusInternalServerError, res.Result().StatusCode)
 		assert.Equal(t, res.Body.String(), "internal error saving payload\n")
@@ -186,9 +186,13 @@ func TestBuildPrivateKeyHashMiddleware(T *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost/%s", hash), nil)
 		res := httptest.NewRecorder()
 
-		s := NewMemoryStore()
-		s.internal = map[string]PayloadWithMetadata{hash: {Payload: *examplePayload}}
-		r := buildRouter(s)
+		s, _ := NewStorage(StorageOptions{Engine: MemoryStorage})
+		pwm := PayloadWithMetadata{
+			Payload: *examplePayload,
+			// TODO add metadata stuff
+		}
+		s.Set(hash, pwm)
+		r := newRouter(&s)
 		r.ServeHTTP(res, req)
 
 		assert.Equal(t, http.StatusOK, res.Code)

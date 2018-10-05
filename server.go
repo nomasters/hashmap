@@ -25,10 +25,6 @@ const (
 // payloadCtxKey is used to give payload a collision-free key
 const payloadCtxKey ctxKey = 0
 
-var (
-	s Storage
-)
-
 // ServerOptions for the hashMap Server.
 type ServerOptions struct {
 	Host     string
@@ -60,21 +56,16 @@ func (opts ServerOptions) AddrString() string {
 
 // initStorage takes a StorageOptions stuct and sets the globally scoped
 // Storage interface for use by the server
-func initStorage(opts StorageOptions) {
+func initStorage(opts StorageOptions) *Storage {
 	var err error
-	s, err = NewStorage(opts)
+	s, err := NewStorage(opts)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return &s
 }
 
-// Run takes an Options struct and a server running on a specified port
-// TODO: add middleware such as rate limiting and logging
-func Run(opts ServerOptions) {
-
-	// configured globally scoped storage interface
-	initStorage(opts.Storage)
-
+func newRouter(s *Storage) *chi.Mux {
 	r := chi.NewRouter()
 
 	// liberal CORS support for `hashmap-client-js`
@@ -89,12 +80,22 @@ func Run(opts ServerOptions) {
 
 	r.Use(cors.Handler)
 	r.Use(middleware.Timeout(DefaultServerTimeout))
-	r.Post("/", submitHandleFunc)
+	r.Post("/", newSubmitHandleFunc(*s))
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"status": "healthy"}`)) })
 	r.Route("/{pkHash}", func(r chi.Router) {
-		r.Use(pkHashCtx)
+		r.Use(newPrivateKeyHashMiddleware(*s))
 		r.Get("/", getPayloadHandleFunc)
 	})
+	return r
+}
+
+// Run takes an Options struct and a server running on a specified port
+// TODO: add middleware such as rate limiting and logging
+func Run(opts ServerOptions) {
+
+	// configured globally scoped storage interface
+	s := initStorage(opts.Storage)
+	r := newRouter(s)
 
 	// run server either in http or https mode
 	if opts.TLS {
@@ -108,55 +109,57 @@ func Run(opts ServerOptions) {
 	}
 }
 
-// submitHandleFunc reads and validates a Payload from r.Body and runs a series of
+// newSubmitHandleFunc reads and validates a Payload from r.Body and runs a series of
 // Payload and Data validations. If all checks pass, the pubkey is hashed and
 // the hash and payload are written to the KV store.
 // TODO: return a proper JSON formatted response
-func submitHandleFunc(w http.ResponseWriter, r *http.Request) {
-	p, err := NewPayloadFromReader(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), 400)
-		return
+func newSubmitHandleFunc(s Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p, err := NewPayloadFromReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		d, err := p.GetData()
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		if err := d.ValidateTTL(); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		if err := d.ValidateMessageSize(); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		if err := d.ValidateTimeStamp(); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		pubKey, _ := p.PubKeyBytes() // no error checking needed, already validated
+		hash := MultiHashToString(pubKey)
+
+		pwm := PayloadWithMetadata{
+			Payload: *p,
+			// TODO add metadata stuff
+		}
+
+		if err := s.Set(hash, pwm); err != nil {
+			log.Println(err)
+			http.Error(w, "internal error saving payload", 500)
+			return
+		}
+
+		response, _ := json.Marshal(SubmitSuccessResponse{Endpoint: hash})
+
+		w.Write([]byte(response))
 	}
-
-	d, err := p.GetData()
-	if err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	if err := d.ValidateTTL(); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	if err := d.ValidateMessageSize(); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	if err := d.ValidateTimeStamp(); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	pubKey, _ := p.PubKeyBytes() // no error checking needed, already validated
-	hash := MultiHashToString(pubKey)
-
-	pwm := PayloadWithMetadata{
-		Payload: *p,
-		// TODO add metadata stuff
-	}
-
-	if err := s.Set(hash, pwm); err != nil {
-		log.Println(err)
-		http.Error(w, "internal error saving payload", 500)
-		return
-	}
-
-	response, _ := json.Marshal(SubmitSuccessResponse{Endpoint: hash})
-
-	w.Write([]byte(response))
 }
 
 // getPayloadHandleFunc gets a payload from Context, marshals the json,
@@ -172,61 +175,63 @@ func getPayloadHandleFunc(w http.ResponseWriter, r *http.Request) {
 // a payload. This middleware is designed to verify that the payload is properly
 // formatted, as well as checking for common issues such as malformed hashes,
 // invalid TTLs, and pubkey mismatches.
-func pkHashCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pkHash := chi.URLParam(r, "pkHash")
+func newPrivateKeyHashMiddleware(s Storage) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			pkHash := chi.URLParam(r, "pkHash")
 
-		if err := ValidateMultiHash(pkHash); err != nil {
-			http.Error(w, http.StatusText(400), 400)
-			return
-		}
+			if err := ValidateMultiHash(pkHash); err != nil {
+				http.Error(w, http.StatusText(400), 400)
+				return
+			}
 
-		pwm, err := s.Get(pkHash)
-		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
-		payload := pwm.Payload
+			pwm, err := s.Get(pkHash)
+			if err != nil {
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
+			payload := pwm.Payload
 
-		if err := payload.Verify(); err != nil {
-			// TODO: refactor to structured logs
-			log.Println("payload failed to verify after reading from cache, deleting")
-			log.Println(err)
-			log.Println(payload)
-			s.Delete(pkHash)
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
+			if err := payload.Verify(); err != nil {
+				// TODO: refactor to structured logs
+				log.Println("payload failed to verify after reading from cache, deleting")
+				log.Println(err)
+				log.Println(payload)
+				s.Delete(pkHash)
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
 
-		// check to see if pkHash matches the actual Payload pubkey
-		// this should only error if a backing store has been tampered with
-		pubKey, _ := payload.PubKeyBytes() // no error checking needed, already validated
-		if h := MultiHashToString(pubKey); h != pkHash {
-			log.Printf("key hash does not match pubkey value hash key: %s value: %s\n", pkHash, h)
-			s.Delete(pkHash)
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
+			// check to see if pkHash matches the actual Payload pubkey
+			// this should only error if a backing store has been tampered with
+			pubKey, _ := payload.PubKeyBytes() // no error checking needed, already validated
+			if h := MultiHashToString(pubKey); h != pkHash {
+				log.Printf("key hash does not match pubkey value hash key: %s value: %s\n", pkHash, h)
+				s.Delete(pkHash)
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
 
-		data, err := payload.GetData()
-		if err != nil {
-			log.Println("data failed to load after reading from cache, deleting")
-			log.Println(err)
-			log.Println(payload)
-			s.Delete(pkHash)
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
+			data, err := payload.GetData()
+			if err != nil {
+				log.Println("data failed to load after reading from cache, deleting")
+				log.Println(err)
+				log.Println(payload)
+				s.Delete(pkHash)
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
 
-		if err := data.ValidateTTL(); err != nil {
-			log.Println(err)
-			log.Println(payload)
-			s.Delete(pkHash)
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
+			if err := data.ValidateTTL(); err != nil {
+				log.Println(err)
+				log.Println(payload)
+				s.Delete(pkHash)
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
 
-		ctx := context.WithValue(r.Context(), payloadCtxKey, payload)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			ctx := context.WithValue(r.Context(), payloadCtxKey, payload)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }

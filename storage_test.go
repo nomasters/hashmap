@@ -12,8 +12,8 @@ func TestEngine_String(T *testing.T) {
 	T.Parallel()
 
 	for engine, expected := range map[hashmap.Engine]string{
-		hashmap.MemoryStorage: "Memory",
-		hashmap.RedisStorage:  "Redis",
+		hashmap.MemoryStorage: "memory",
+		hashmap.RedisStorage:  "redis",
 	} {
 		assert.Equal(T, expected, engine.String())
 	}
@@ -25,19 +25,19 @@ func TestNewStorage(T *testing.T) {
 	T.Run("memory storage", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := hashmap.NewStorage(hashmap.MemoryStorage, hashmap.StorageOptions{})
+		_, err := hashmap.NewStorage(hashmap.StorageOptions{Engine: hashmap.MemoryStorage})
 		assert.NoError(t, err)
 	})
 
 	T.Run("redis storage", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := hashmap.NewStorage(hashmap.RedisStorage, hashmap.StorageOptions{})
+		_, err := hashmap.NewStorage(hashmap.StorageOptions{Engine: hashmap.RedisStorage})
 		assert.NoError(t, err)
 	})
 
 	T.Run("invalid storage engine", func(t *testing.T) {
-		_, err := hashmap.NewStorage(666, hashmap.StorageOptions{})
+		_, err := hashmap.NewStorage(hashmap.StorageOptions{Engine: 3})
 		assert.Error(t, err)
 	})
 }

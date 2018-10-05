@@ -109,7 +109,7 @@ func (er errorReader) Read(b []byte) (int, error) {
 func buildTestPayload(t *testing.T, message string) hashmap.Payload {
 	t.Helper()
 
-	opts := hashmap.Options{
+	opts := hashmap.GeneratePayloadOptions{
 		Message:   message,
 		TTL:       hashmap.DataTTLMax,
 		Timestamp: time.Now().Unix(),
@@ -121,7 +121,7 @@ func buildTestPayload(t *testing.T, message string) hashmap.Payload {
 	pk, err := base64.StdEncoding.DecodeString(string(text))
 	require.NoError(t, err)
 
-	pbytes, err := hashmap.GeneratePayloadBytes(opts, pk)
+	pbytes, err := hashmap.GeneratePayload(opts, pk)
 	require.NoError(t, err)
 
 	var payload hashmap.Payload
