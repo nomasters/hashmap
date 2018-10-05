@@ -4,12 +4,14 @@
 
 hashmap server is a light-weight cryptographically signed public key value store inspired by JWT and IPNS.
 
-[![CircleCI][1]][2] [![Go Report Card][3]][4]
+[![CircleCI][1]][2] [![Go Report Card][3]][4] [![codecov][5]][6]
 
 [1]: https://circleci.com/gh/nomasters/hashmap.svg?style=svg
 [2]: https://circleci.com/gh/nomasters/hashmap
 [3]: https://goreportcard.com/badge/github.com/nomasters/hashmap
 [4]: https://goreportcard.com/report/github.com/nomasters/hashmap
+[5]: https://codecov.io/gh/nomasters/hashmap/branch/master/graph/badge.svg
+[6]: https://codecov.io/gh/nomasters/hashmap
 
 ## Summary
 
