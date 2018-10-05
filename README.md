@@ -2,7 +2,7 @@
 
 # hashmap
 
-an ephemeral, cryptographically signed, key-value store inspired by IPNS.
+hashmap server is a light-weight cryptographically signed public key value store inspired by JWT and IPNS.
 
 [![CircleCI][1]][2] [![Go Report Card][3]][4]
 
