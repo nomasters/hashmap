@@ -13,8 +13,8 @@ jobs:
       - checkout
       - run: ./scripts/build.sh
       - run: go test -race -v ./...
-      # - run: go test -race -coverprofile=coverage.txt -covermode=atomic
-      # - run: bash <(curl -s https://codecov.io/bash)
+      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      - run: bash <(curl -s https://codecov.io/bash)
 workflows:
   version: 2
   build:
