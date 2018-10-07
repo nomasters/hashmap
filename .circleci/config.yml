@@ -6,17 +6,14 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:1.10.3
+      - image: circleci/golang:1.11.1
     working_directory: /go/src/github.com/nomasters/hashmap
     steps:
       - run: sudo apt-get update && sudo apt-get install clang
       - checkout
-      # specify any bash command here prefixed with `run: `
-      # - run: go get -u golang.org/x/vgo
-      - run: go get -u github.com/stretchr/testify/assert
-      - run: go get -v -d ./...
-      - run: go test -v ./...
-      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      - run: go get -u golang.org/x/vgo
+      - run: vgo test -race -v ./...
+      - run: vgo test -race -coverprofile=coverage.txt -covermode=atomic
       - run: bash <(curl -s https://codecov.io/bash)
 workflows:
   version: 2
