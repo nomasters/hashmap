@@ -50,7 +50,7 @@ func main() {
 	message := []byte("hello, world, lol")
 
 	entry := Entry{
-		Version:   V1,
+		Version:   V0_1_0,
 		Method:    NaClSign,
 		TimeStamp: time.Now(),
 		TTL:       time.Duration(15 * time.Minute),
@@ -178,7 +178,7 @@ func pubKeyFromBytes(b []byte) ([32]byte, error) {
 
 func versionFromByte(b byte) (Version, error) {
 	v := Version(uint8(b))
-	if v != V1 {
+	if v != V0_1_0 {
 		return Version(0), errors.New("unsupported version number")
 	}
 	return v, nil
