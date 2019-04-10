@@ -5,12 +5,16 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
-	b64 "encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	hashmap "github.com/nomasters/hashmap/x/hashmap"
+
+	ptypes "github.com/golang/protobuf/ptypes"
 	"golang.org/x/crypto/nacl/sign"
 )
 
@@ -47,7 +51,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	message := []byte("hello, world, lol")
+	message := []byte("ipfs/zb2rherYQC4ZJw2gZD4kYNoRcjjTy4C5HKrZVdRK2pgStJT87")
+
+	fmt.Println("\n-- old format raw --\n")
+	oldEntryRaw := []byte(`{"data":"eyJtZXNzYWdlIjoiYVhRZ2QyOXlhM009IiwidGltZXN0YW1wIjoxNTUxODkyOTk3NDQ5MDAwMDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSIsInR0bCI6ODY0MDB9","sig":"aPHttyXucZslTD51boL9V0Glsfvv6ZQMaqo/JSBErKJ5Os/CZjwBN/PH5qA+MO+vuTyz+aCSr7TYMJ+TBj8cAw==","pubkey":"/7lFDizHeQMZpEVTtKPhZ/Gn7KcZoBa+bCJnh5gsRp8="}`)
+	fmt.Println(oldEntryRaw)
+	fmt.Println("\n-- old format len --\n")
+	fmt.Println(len(oldEntryRaw))
+	fmt.Println("\n-- old format hex --\n")
+	fmt.Printf("%x\n", oldEntryRaw)
+	fmt.Printf("\n\n\n")
 
 	entry := Entry{
 		Version:   V0_1_0,
@@ -60,7 +73,6 @@ func main() {
 	}
 
 	entry.Sign(sk)
-	fmt.Println(entry.Bytes())
 
 	entry2, err := NewEntryFromBytes(entry.Bytes())
 	if err != nil {
@@ -70,17 +82,35 @@ func main() {
 	if err := entry2.Verify(); err != nil {
 		panic(err)
 	}
-	fmt.Println("it works")
+	fmt.Println("\n-- binary blob raw --\n")
+	fmt.Println(entry2.Bytes())
+	fmt.Println("\n-- binary blob len --\n")
 	fmt.Println(len(entry2.Bytes()))
+	fmt.Println("\n-- binary blob hex --\n")
+	fmt.Printf("%x\n", entry2.Bytes())
+	fmt.Printf("\n\n\n")
 
-	oldEntryRaw := []byte(`{"data":"eyJtZXNzYWdlIjoiYVhRZ2QyOXlhM009IiwidGltZXN0YW1wIjoxNTUxODkyOTk3NDQ5MDAwMDAwLCJzaWdNZXRob2QiOiJuYWNsLXNpZ24tZWQyNTUxOSIsInZlcnNpb24iOiIwLjAuMSIsInR0bCI6ODY0MDB9","sig":"aPHttyXucZslTD51boL9V0Glsfvv6ZQMaqo/JSBErKJ5Os/CZjwBN/PH5qA+MO+vuTyz+aCSr7TYMJ+TBj8cAw==","pubkey":"/7lFDizHeQMZpEVTtKPhZ/Gn7KcZoBa+bCJnh5gsRp8="}`)
-	fmt.Println(len(oldEntryRaw))
-	e2 := b64.StdEncoding.EncodeToString(entry2.Bytes())
-	e2h := fmt.Sprintf("%x", entry2.Bytes())
-	fmt.Println(e2)
-	fmt.Println(len(e2))
-	fmt.Println(e2h)
-	fmt.Println(len(e2h))
+	pbTimeNow, _ := ptypes.TimestampProto(entry.TimeStamp)
+
+	var protoEntry hashmap.Entry
+	protoEntry.Version = hashmap.Entry_V1
+	protoEntry.Method = hashmap.Entry_NACLSIGN
+	protoEntry.Timestamp = pbTimeNow
+	protoEntry.Ttl = ptypes.DurationProto(time.Duration(15 * time.Minute))
+	protoEntry.Pub = entry.Pub[:]
+	protoEntry.Sig = entry.Sig[:]
+	protoEntry.Len = uint32(len(message))
+	protoEntry.Data = message
+	pbOut, err := proto.Marshal(&protoEntry)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("\n-- protobuff raw -- \n")
+	fmt.Println(pbOut)
+	fmt.Println("\n-- protobuff raw len --\n")
+	fmt.Println(len(pbOut))
+	fmt.Println("\n-- protobuff hex --\n")
+	fmt.Printf("%x\n", pbOut)
 }
 
 func (e Entry) Verify() error {
@@ -112,7 +142,6 @@ func NewEntryFromBytes(raw []byte) (Entry, error) {
 	if err != nil {
 		return entry, err
 	}
-	fmt.Println(len(raw))
 	timeStamp, err := timeStampFromBytes(raw[2:10])
 	if err != nil {
 		return entry, err
