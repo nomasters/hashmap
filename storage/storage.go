@@ -22,7 +22,7 @@ type Storage interface {
 	Delete(key string) error
 }
 
-// Options is us to store Storage related Options
+// Context is us to store Storage related Options
 type Context struct {
 	engine Engine
 	redis  RedisOptions
@@ -32,7 +32,7 @@ type Context struct {
 // Option is used for special Settings in Storage
 type Option func(*Context)
 
-// parseOptions takes a arbitrary number of Option funcs and returns an Options struct
+// parseOptions takes a arbitrary number of Option funcs and returns a Context struct
 func parseOptions(options ...Option) Context {
 	var c Context
 	for _, option := range options {
