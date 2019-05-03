@@ -2,6 +2,7 @@ package storage
 
 import (
 	"testing"
+	"time"
 )
 
 func TestNewStorage(T *testing.T) {
@@ -18,7 +19,7 @@ func TestNewStorage(T *testing.T) {
 	T.Run("redis storage", func(t *testing.T) {
 		t.Parallel()
 
-		if _, err := NewStorage(WithEngine(RedisEngine)); err != nil {
+		if _, err := NewStorage(WithEngine(RedisEngine), WithTTL(5*time.Second)); err != nil {
 			t.Error(err)
 		}
 	})
