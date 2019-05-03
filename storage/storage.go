@@ -23,22 +23,22 @@ type Storage interface {
 }
 
 // Options is us to store Storage related Options
-type Options struct {
+type Context struct {
 	engine Engine
 	redis  RedisOptions
 	ttl    time.Duration
 }
 
 // Option is used for special Settings in Storage
-type Option func(*Options)
+type Option func(*Context)
 
 // parseOptions takes a arbitrary number of Option funcs and returns an Options struct
-func parseOptions(options ...Option) Options {
-	var o Options
+func parseOptions(options ...Option) Context {
+	var c Context
 	for _, option := range options {
-		option(&o)
+		option(&c)
 	}
-	return o
+	return c
 }
 
 // NewStorage is a helper function used for configuring supported storage engines
@@ -56,14 +56,14 @@ func NewStorage(options ...Option) (Storage, error) {
 
 // WithTTL takes a time.Duration and returns a Option used for settings Storage related options
 func WithTTL(d time.Duration) Option {
-	return func(o *Options) {
-		o.ttl = d
+	return func(c *Context) {
+		c.ttl = d
 	}
 }
 
 // WithEngine takes an Engine and returns an Option.
 func WithEngine(e Engine) Option {
-	return func(o *Options) {
-		o.engine = e
+	return func(c *Context) {
+		c.engine = e
 	}
 }

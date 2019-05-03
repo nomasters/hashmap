@@ -29,64 +29,64 @@ type RedisOptions struct {
 
 // WithRedisEndpoint takes a string and returns an Option
 func WithRedisEndpoint(e string) Option {
-	return func(o *Options) {
-		o.redis.endpoint = e
+	return func(c *Context) {
+		c.redis.endpoint = e
 	}
 }
 
 // WithRedisAuth takes a string and returns an Option
 func WithRedisAuth(a string) Option {
-	return func(o *Options) {
-		o.redis.auth = a
+	return func(c *Context) {
+		c.redis.auth = a
 	}
 }
 
 // WithRedisMaxIdle takes an int and returns an Option
 func WithRedisMaxIdle(m int) Option {
-	return func(o *Options) {
-		o.redis.maxIdle = m
+	return func(c *Context) {
+		c.redis.maxIdle = m
 	}
 }
 
 // WithRedisMaxActive takes an int and returns an Option
 func WithRedisMaxActive(m int) Option {
-	return func(o *Options) {
-		o.redis.maxActive = m
+	return func(c *Context) {
+		c.redis.maxActive = m
 	}
 }
 
 // WithRedisIdleTimeout takes a time.Duration and returns an Option
 func WithRedisIdleTimeout(d time.Duration) Option {
-	return func(o *Options) {
-		o.redis.idleTimeout = d
+	return func(c *Context) {
+		c.redis.idleTimeout = d
 	}
 }
 
 // WithRedisWait takes a bool and returns an Option
 func WithRedisWait(b bool) Option {
-	return func(o *Options) {
-		o.redis.wait = b
+	return func(c *Context) {
+		c.redis.wait = b
 	}
 }
 
 // WithRedisMaxConnLifetime takes a bool and returns an Option
 func WithRedisMaxConnLifetime(d time.Duration) Option {
-	return func(o *Options) {
-		o.redis.maxConnLifetime = d
+	return func(c *Context) {
+		c.redis.maxConnLifetime = d
 	}
 }
 
 // WithRedisTLS takes a bool and returns an Option
 func WithRedisTLS(b bool) Option {
-	return func(o *Options) {
-		o.redis.tls = b
+	return func(c *Context) {
+		c.redis.tls = b
 	}
 }
 
 // WithRedisDialTLSSkipVerify takes a bool and returns an Option
 func WithRedisDialTLSSkipVerify(b bool) Option {
-	return func(o *Options) {
-		o.redis.dialTLSSkipVerify = b
+	return func(c *Context) {
+		c.redis.dialTLSSkipVerify = b
 	}
 }
 
