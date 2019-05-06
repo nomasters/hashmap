@@ -11,7 +11,7 @@ message Payload {
         V1 = 1;
     }
 
-    message Signature {
+    message SigBundle {
         
         enum Alg {
             UNKNOWN = 0;
@@ -26,7 +26,7 @@ message Payload {
     Version version = 1;
     google.protobuf.Timestamp timestamp = 2;
     google.protobuf.Duration ttl = 3;
-    repeated Signature signatures = 4;
+    repeated SigBundle sig_bundles = 4;
     uint32 len = 5;
     bytes data = 6;
 }
