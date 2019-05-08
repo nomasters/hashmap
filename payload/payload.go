@@ -152,7 +152,7 @@ func Marshal(p Payload) ([]byte, error) {
 // - Sort out what Options we should pass in: I'm thinking TTL, Timestamp, and Version
 // - create function that creates bytes of: version|timestamp|ttl|len|data
 
-// Generate take a message, singers, and a set of options and returns a payload or error.
+// Generate takes a message, signers, and a set of options and returns a payload or error.
 // This function defaults to time.Now() and the default TTL of 24 hours. Generate Requires
 // at least one signer, but can sign with many signers. Sort order is important though, The unique
 // order of the signers pubkeys are what is responsible for generating the endpoint hash.
