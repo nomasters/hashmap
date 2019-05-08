@@ -2,24 +2,24 @@ package payload
 
 import (
 	"testing"
-	"time"
+
+	"github.com/nomasters/hashmap/sig"
 )
 
 func TestNewPayload(t *testing.T) {
 	t.Parallel()
-	p := Payload{
-		Version:   V1,
-		Timestamp: time.Now(),
-		TTL:       30 * time.Second,
-		SigSets: []SigSet{
-			SigSet{
-				Alg: NACLSign,
-				Pub: []byte("so fake"),
-				Sig: []byte("yep, the fakest"),
-			},
-		},
-		Data: []byte("hello, world"),
+
+	var signers []sig.Signer
+	signers = append(signers, sig.GenNaclSign())
+
+	message := []byte("hello, world")
+
+	p, err := Generate(message, signers)
+	if err != nil {
+		t.Error(err)
 	}
+
+	t.Log(p)
 
 	encoded, err := Marshal(p)
 	if err != nil {
@@ -31,5 +31,7 @@ func TestNewPayload(t *testing.T) {
 		t.Error(err)
 	}
 	t.Logf("%v", string(decoded.Data))
+	t.Logf("%v", decoded.Timestamp)
+	t.Logf("%v", decoded.TTL)
 
 }

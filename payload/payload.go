@@ -3,6 +3,9 @@
 package payload
 
 import (
+	"bytes"
+	"encoding/binary"
+	"errors"
 	"time"
 
 	proto "github.com/gogo/protobuf/proto"
@@ -19,6 +22,14 @@ const (
 	V0 Version = iota
 	// V1 is the current version of the payload spec
 	V1
+)
+
+const (
+	defaultTTL = 24 * time.Hour
+)
+
+var (
+	defaultVersion = V1
 )
 
 // Payload holds all information related to a Hashmap Payload that will be handled
@@ -49,6 +60,20 @@ type Context struct {
 	ttl             time.Duration
 	verifyTTL       bool
 	verifyTimestamp bool
+}
+
+// parseOptions takes a arbitrary number of Option funcs and returns a Context with defaults
+// for version, timestamp, and ttl
+func parseOptions(options ...Option) Context {
+	c := Context{
+		version:   defaultVersion,
+		timestamp: time.Now(),
+		ttl:       defaultTTL,
+	}
+	for _, option := range options {
+		option(&c)
+	}
+	return c
 }
 
 // Unmarshal takes a byte slice and attempts to decode the protobuf wire
@@ -125,8 +150,53 @@ func Marshal(p Payload) ([]byte, error) {
 
 // TODO:
 // - Sort out what Options we should pass in: I'm thinking TTL, Timestamp, and Version
-// -
+// - create function that creates bytes of: version|timestamp|ttl|len|data
 
+// Generate take a message, singers, and a set of options and returns a payload or error.
+// This function defaults to time.Now() and the default TTL of 24 hours. Generate Requires
+// at least one signer, but can sign with many signers. Sort order is important though, The unique
+// order of the signers pubkeys are what is responsible for generating the endpoint hash.
 func Generate(message []byte, signers []sig.Signer, options ...Option) (Payload, error) {
-	return Payload{}, nil
+	if len(signers) == 0 {
+		return Payload{}, errors.New("Generate must have at least one signer")
+	}
+	c := parseOptions(options...)
+	p := Payload{
+		Version:   c.version,
+		Timestamp: c.timestamp,
+		TTL:       c.ttl,
+		Data:      message,
+	}
+
+	var sigBundles []sig.Bundle
+	for _, s := range signers {
+		b, err := s.Sign(p.SigningBytes())
+		if err != nil {
+			return Payload{}, err
+		}
+		sigBundles = append(sigBundles, b)
+	}
+	p.SigBundles = sigBundles
+
+	return p, nil
+}
+
+// SigningBytes returns a byte slice of version|timestamp|ttl|len|data used as
+// the message to be signed by a Signer
+func (p Payload) SigningBytes() []byte {
+	j := [][]byte{
+		uint64ToBytes(uint64(p.Version)),
+		uint64ToBytes(uint64(p.Timestamp.UnixNano())),
+		uint64ToBytes(uint64(p.TTL.Nanoseconds())),
+		uint64ToBytes(uint64(len(p.Data))),
+		p.Data,
+	}
+	return bytes.Join(j, []byte{})
+}
+
+// uint64ToBytes converts uint64 numbers into a byte slice in Big Endian format
+func uint64ToBytes(t uint64) []byte {
+	timeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timeBytes, t)
+	return timeBytes
 }
