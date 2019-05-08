@@ -150,7 +150,8 @@ func Marshal(p Payload) ([]byte, error) {
 
 // TODO:
 // - Sort out what Options we should pass in: I'm thinking TTL, Timestamp, and Version
-// - create function that creates bytes of: version|timestamp|ttl|len|data
+// - Write a Verify function (this might not actually need to be an interface)
+// - Get full test coverage for all paths
 
 // Generate takes a message, signers, and a set of options and returns a payload or error.
 // This function defaults to time.Now() and the default TTL of 24 hours. Generate Requires
@@ -182,7 +183,7 @@ func Generate(message []byte, signers []sig.Signer, options ...Option) (Payload,
 }
 
 // SigningBytes returns a byte slice of version|timestamp|ttl|len|data used as
-// the message to be signed by a Signer
+// the message to be signed by a Signer.
 func (p Payload) SigningBytes() []byte {
 	j := [][]byte{
 		uint64ToBytes(uint64(p.Version)),
@@ -196,7 +197,7 @@ func (p Payload) SigningBytes() []byte {
 
 // uint64ToBytes converts uint64 numbers into a byte slice in Big Endian format
 func uint64ToBytes(t uint64) []byte {
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, t)
-	return timeBytes
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, t)
+	return b
 }
