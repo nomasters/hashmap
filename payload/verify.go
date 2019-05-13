@@ -116,23 +116,35 @@ func verify(p Payload, options ...Option) error {
 // requirements
 func validate(p Payload, options ...Option) error {
 	c := parseOptions(options...)
-	if c.validate.payloadSize && !p.validPayloadSize() {
-		return errors.New("MaxPayloadSize exceeded")
+	if c.validate.payloadSize {
+		if !p.validPayloadSize() {
+			return errors.New("MaxPayloadSize exceeded")
+		}
 	}
-	if c.validate.dataSize && !p.validDataSize() {
-		return errors.New("MaxMessageSize exceeded")
+	if c.validate.dataSize {
+		if !p.validDataSize() {
+			return errors.New("MaxMessageSize exceeded")
+		}
 	}
-	if c.validate.version && !p.validVersion() {
-		return errors.New("invalid payload version")
+	if c.validate.version {
+		if !p.validVersion() {
+			return errors.New("invalid payload version")
+		}
 	}
-	if c.validate.ttl && p.isExpired(c.validate.referenceTime) {
-		return errors.New("payload ttl is expired")
+	if c.validate.ttl {
+		if p.isExpired(c.validate.referenceTime) {
+			return errors.New("payload ttl is expired")
+		}
 	}
-	if c.validate.futureTime && p.isInFuture(c.validate.referenceTime) {
-		return errors.New("payload timestamp is too far in the future")
+	if c.validate.futureTime {
+		if p.isInFuture(c.validate.referenceTime) {
+			return errors.New("payload timestamp is too far in the future")
+		}
 	}
-	if c.validate.submitTime && !p.withinSubmitWindow(c.validate.referenceTime) {
-		return errors.New("timestamp is outside of submit window")
+	if c.validate.submitTime {
+		if !p.withinSubmitWindow(c.validate.referenceTime) {
+			return errors.New("timestamp is outside of submit window")
+		}
 	}
 	return nil
 }
@@ -163,7 +175,7 @@ func (p Payload) validVersion() bool {
 // validDataSize checks that the length of Payload.Data is less than or equal
 // to the MaxMessageSize and returns a boolean value.
 func (p Payload) validDataSize() bool {
-	return len(p.Data) > MaxMessageSize
+	return len(p.Data) <= MaxMessageSize
 }
 
 // validPayloadSize checks that the wire protocol bytes are less than or equal
@@ -188,14 +200,14 @@ func (p Payload) withinSubmitWindow(t time.Time) bool {
 	if diff.Seconds() < 0 {
 		diff = -diff
 	}
-	return diff > MaxSubmitWindow
+	return diff <= MaxSubmitWindow
 }
 
 // verifySignatures checks all signatures in the sigBundles. If all signatures
 // are valid, it returns `true`.
 func (p Payload) verifySignatures() bool {
 	for _, bundle := range p.SigBundles {
-		if ok := sig.Verify(p.Data, bundle); !ok {
+		if ok := sig.Verify(p.SigningBytes(), bundle); !ok {
 			return false
 		}
 	}

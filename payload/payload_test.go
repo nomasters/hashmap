@@ -1,10 +1,11 @@
 package payload
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
-	"github.com/nomasters/hashmap/sig"
+	sig "github.com/nomasters/hashmap/sig"
 )
 
 func TestGenerate(t *testing.T) {
@@ -59,6 +60,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
+	t.Parallel()
 	var signers []sig.Signer
 	signers = append(signers, sig.GenNaclSign())
 	message := []byte("hello, world")
@@ -87,18 +89,52 @@ func TestMarshal(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-	var signers []sig.Signer
-	signers = append(signers, sig.GenNaclSign())
-	message := []byte("hello, world")
-	p, err := Generate(message, signers)
-	if err != nil {
-		t.Error(err)
-	}
-	encoded, err := Marshal(p)
-	if err != nil {
-		t.Error(err)
-	}
-	if _, err := Unmarshal(encoded); err != nil {
-		t.Error(err)
-	}
+	t.Parallel()
+	t.Run("Normal Operation", func(t *testing.T) {
+		var signers []sig.Signer
+		signers = append(signers, sig.GenNaclSign())
+		message := []byte("hello, world")
+		p, err := Generate(message, signers)
+		if err != nil {
+			t.Error(err)
+		}
+		encoded, err := Marshal(p)
+		if err != nil {
+			t.Error(err)
+		}
+		if _, err := Unmarshal(encoded); err != nil {
+			t.Error(err)
+		}
+	})
+	t.Run("invalid protobuf", func(t *testing.T) {
+		invalidPayload, _ := hex.DecodeString("ffffffffffffff")
+		// this is a valid payload protobuf with a malformed (by hand) timestamp to force out of range errors
+		badTimestamp, _ := hex.DecodeString("12070880cdfdffaf071a080880aef188221001")
+		// this is a valid payload protobuf with a malformed (by hand) ttl to force out of range errors
+		badTTL, _ := hex.DecodeString("12070880cdfdefaf071a0808fffffff8221001")
+
+		testTable := []struct {
+			bytes []byte
+			err   string
+		}{
+			{
+				bytes: invalidPayload,
+				err:   "failed to catch malformed payload bytes",
+			},
+			{
+				bytes: badTimestamp,
+				err:   "failed to catch malformed timestamp",
+			},
+			{
+				bytes: badTTL,
+				err:   "failed to catch malformed ttl",
+			},
+		}
+
+		for _, test := range testTable {
+			if _, err := Unmarshal(test.bytes); err == nil {
+				t.Error(test.err)
+			}
+		}
+	})
 }
