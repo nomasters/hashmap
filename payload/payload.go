@@ -43,32 +43,56 @@ type Payload struct {
 	Data       []byte
 }
 
-// Verifier is an interface for verifying Payloads and can take an arbitrary number of Options
-// to modify the strictness of the verification.
-type Verifier interface {
-	Verify(options ...Option) error
-}
-
-// Option is used for interacting with Context for Options on Generate and
-// Verified tooling.
+// Option is used for interacting with Context for Options on Generate
 type Option func(*Context)
 
 // Context contains private fields used for Option
 type Context struct {
-	version         Version
-	timestamp       time.Time
-	ttl             time.Duration
-	verifyTTL       bool
-	verifyTimestamp bool
+	version   Version
+	timestamp time.Time
+	ttl       time.Duration
+	validate  validateContext
+}
+
+// WithVersion takes a Version and returns an Option
+func WithVersion(v Version) Option {
+	return func(c *Context) {
+		c.version = v
+	}
+}
+
+// WithTimestamp takes a time.Time and returns an Option
+func WithTimestamp(t time.Time) Option {
+	return func(c *Context) {
+		c.timestamp = t
+	}
+}
+
+// WithTTL takes a time.Duration and returns an Option
+func WithTTL(d time.Duration) Option {
+	return func(c *Context) {
+		c.ttl = d
+	}
 }
 
 // parseOptions takes a arbitrary number of Option funcs and returns a Context with defaults
-// for version, timestamp, and ttl
+// for version, timestamp, and ttl, and validate rules.
 func parseOptions(options ...Option) Context {
+	now := time.Now()
+
 	c := Context{
 		version:   defaultVersion,
-		timestamp: time.Now(),
+		timestamp: now,
 		ttl:       defaultTTL,
+		validate: validateContext{
+			ttl:           true,
+			payloadSize:   true,
+			dataSize:      true,
+			version:       true,
+			submitTime:    false,
+			futureTime:    true,
+			referenceTime: now,
+		},
 	}
 	for _, option := range options {
 		option(&c)
@@ -147,11 +171,6 @@ func Marshal(p Payload) ([]byte, error) {
 	return proto.Marshal(pbp)
 
 }
-
-// TODO:
-// - Sort out what Options we should pass in: I'm thinking TTL, Timestamp, and Version
-// - Write a Verify function (this might not actually need to be an interface)
-// - Get full test coverage for all paths
 
 // Generate takes a message, signers, and a set of options and returns a payload or error.
 // This function defaults to time.Now() and the default TTL of 24 hours. Generate Requires
