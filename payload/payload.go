@@ -86,6 +86,7 @@ func parseOptions(options ...Option) Context {
 		ttl:       defaultTTL,
 		validate: validateContext{
 			ttl:           true,
+			expiration:    true,
 			payloadSize:   true,
 			dataSize:      true,
 			version:       true,

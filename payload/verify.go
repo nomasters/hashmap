@@ -20,11 +20,16 @@ const (
 	// MaxSubmitWindow is the time drift allow between a submission
 	// to hashmap server and the time reflected on a signed payload
 	MaxSubmitWindow = 5 * time.Second
+	// MinTTL is the minimum value of a TTL for a payload
+	MinTTL = 0 * time.Second
+	// MaxTTL is the maximum value of a TTL for a payload
+	MaxTTL = 24 * 7 * time.Hour // 1 week
 )
 
 // validateContext is used for interacting with Context
 type validateContext struct {
 	ttl           bool
+	expiration    bool
 	payloadSize   bool
 	dataSize      bool
 	version       bool
@@ -54,6 +59,14 @@ func WithServerMode(b bool) Option {
 func WithValidateTTL(b bool) Option {
 	return func(c *Context) {
 		c.validate.ttl = b
+	}
+}
+
+// WithValidateExpiration sets context.validate.expiration boolean. Defaults to true.
+// Setting to false will skip validation when using the payload Verify method
+func WithValidateExpiration(b bool) Option {
+	return func(c *Context) {
+		c.validate.expiration = b
 	}
 }
 
@@ -131,9 +144,14 @@ func validate(p Payload, options ...Option) error {
 			return errors.New("invalid payload version")
 		}
 	}
-	if c.validate.ttl {
+	if c.validate.expiration {
 		if p.isExpired(c.validate.referenceTime) {
 			return errors.New("payload ttl is expired")
+		}
+	}
+	if c.validate.ttl {
+		if p.validTTL() {
+			return errors.New("invalid payload ttl")
 		}
 	}
 	if c.validate.futureTime {
@@ -147,6 +165,11 @@ func validate(p Payload, options ...Option) error {
 		}
 	}
 	return nil
+}
+
+// validTTL checks that a TTL falls within an acceptable range.
+func (p Payload) validTTL() bool {
+	return p.TTL < MinTTL || p.TTL > MaxTTL
 }
 
 // isExpired checks the reference time t against the timestamp and
