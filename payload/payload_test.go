@@ -1,6 +1,7 @@
 package payload
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -15,8 +16,14 @@ func TestGenerate(t *testing.T) {
 	m := []byte("hello, world")
 
 	t.Run("Normal Operation", func(t *testing.T) {
-		s := append(signers, sig.GenNaclSign())
-		if _, err := Generate(m, s); err != nil {
+		// single sig
+		s1 := append(signers, sig.GenNaclSign())
+		if _, err := Generate(m, s1); err != nil {
+			t.Error(err)
+		}
+		// multisig
+		s2 := append(signers, sig.GenNaclSign(), sig.GenNaclSign())
+		if _, err := Generate(m, s2); err != nil {
 			t.Error(err)
 		}
 	})
@@ -57,6 +64,32 @@ func TestGenerate(t *testing.T) {
 		}
 	})
 
+}
+
+func TestPayloadCoreMethods(t *testing.T) {
+	t.Parallel()
+
+	// PubKeyBytes tests that the PubKeyBytes method properly generates a concat of
+	// all public keys in proper order
+	t.Run("PubKeyBytes", func(t *testing.T) {
+		var signers []sig.Signer
+		sig1, sig2, sig3 := sig.GenNaclSign(), sig.GenNaclSign(), sig.GenNaclSign()
+		signers = append(signers, sig1, sig2, sig3)
+		message := []byte("")
+		p, err := Generate(message, signers)
+		if err != nil {
+			t.Error(err)
+		}
+		var naclSigns []sig.NaClSign
+		var refConcat []byte
+		naclSigns = append(naclSigns, sig1, sig2, sig3)
+		for _, s := range naclSigns {
+			refConcat = append(refConcat, s.PrivateKey[32:]...)
+		}
+		if !bytes.Equal(refConcat, p.PubKeyBytes()) {
+			t.Error("concatenated pubkey bytes are invalid")
+		}
+	})
 }
 
 func TestMarshal(t *testing.T) {

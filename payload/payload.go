@@ -43,7 +43,7 @@ type Payload struct {
 	Data       []byte
 }
 
-// Option is used for interacting with Context for Options on Generate
+// Option is used for interacting with Context when setting options for Generate and Verify
 type Option func(*Context)
 
 // Context contains private fields used for Option
@@ -213,6 +213,17 @@ func (p Payload) SigningBytes() []byte {
 		p.Data,
 	}
 	return bytes.Join(j, []byte{})
+}
+
+// PubKeyBytes returns a byte slice of all pubkeys concatenated in the index
+// order of the slice of sig.Bundles. This is intended to be used with a hash
+// function to derive the unique endpoint for a payload on hashmap server.
+func (p Payload) PubKeyBytes() []byte {
+	var o []byte
+	for _, b := range p.SigBundles {
+		o = append(o, b.Pub...)
+	}
+	return o
 }
 
 // uint64ToBytes converts uint64 numbers into a byte slice in Big Endian format
