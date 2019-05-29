@@ -22,19 +22,19 @@ type Storage interface {
 	Delete(key string) error
 }
 
-// Context is us to store Storage related Options
-type Context struct {
+// context is us to store Storage related Options
+type context struct {
 	engine Engine
-	redis  RedisOptions
+	redis  redisOptions
 	ttl    time.Duration
 }
 
 // Option is used for special Settings in Storage
-type Option func(*Context)
+type Option func(*context)
 
-// parseOptions takes a arbitrary number of Option funcs and returns a Context struct
-func parseOptions(options ...Option) Context {
-	var c Context
+// parseOptions takes a arbitrary number of Option funcs and returns a context struct
+func parseOptions(options ...Option) context {
+	var c context
 	for _, option := range options {
 		option(&c)
 	}
@@ -56,14 +56,14 @@ func NewStorage(options ...Option) (Storage, error) {
 
 // WithTTL takes a time.Duration and returns a Option used for settings Storage related options
 func WithTTL(d time.Duration) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.ttl = d
 	}
 }
 
 // WithEngine takes an Engine and returns an Option.
 func WithEngine(e Engine) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.engine = e
 	}
 }

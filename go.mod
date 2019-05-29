@@ -6,7 +6,6 @@ require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/go-chi/chi v3.3.3+incompatible
 	github.com/go-chi/cors v1.0.0
-	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.1
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gxed/hashland v0.0.0-20180221191214-d9f6b97f8db2 // indirect
@@ -18,7 +17,6 @@ require (
 	github.com/mr-tron/base58 v0.0.0-20180922112544-9ad991d48a42 // indirect
 	github.com/multiformats/go-multihash v1.0.8
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect

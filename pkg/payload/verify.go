@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nomasters/hashmap/sig"
+	sig "github.com/nomasters/hashmap/pkg/sig"
 )
 
 const (
@@ -26,8 +26,9 @@ const (
 	MaxTTL = 24 * 7 * time.Hour // 1 week
 )
 
-// validateContext is used for interacting with Context
+// validateContext is used for interacting with options
 type validateContext struct {
+	endpoint      string
 	ttl           bool
 	expiration    bool
 	payloadSize   bool
@@ -38,67 +39,75 @@ type validateContext struct {
 	referenceTime time.Time
 }
 
-// WithReferenceTime sets time for Context.validate.referenceTime and is used for
+// WithValidateEndpoint sets the endpoint string for options.validate.endpoint and is
+// used for the Verify method. endpoint defaults to and empty string.
+func WithValidateEndpoint(e string) Option {
+	return func(o *options) {
+		o.validate.endpoint = e
+	}
+}
+
+// WithReferenceTime sets time for options.validate.referenceTime and is used for
 // the Verify method. referenceTime defaults to time.Now
 func WithReferenceTime(t time.Time) Option {
-	return func(c *Context) {
-		c.validate.referenceTime = t
+	return func(o *options) {
+		o.validate.referenceTime = t
 	}
 }
 
-// WithServerMode sets context.validate.submitTime boolean. Defaults to false.
+// WithServerMode sets options.validate.submitTime boolean. Defaults to false.
 // Setting to false will skip validation when using the payload Verify method
 func WithServerMode(b bool) Option {
-	return func(c *Context) {
-		c.validate.submitTime = b
+	return func(o *options) {
+		o.validate.submitTime = b
 	}
 }
 
-// WithValidateTTL sets context.validate.ttl boolean. Defaults to true.
+// WithValidateTTL sets options.validate.ttl boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidateTTL(b bool) Option {
-	return func(c *Context) {
-		c.validate.ttl = b
+	return func(o *options) {
+		o.validate.ttl = b
 	}
 }
 
-// WithValidateExpiration sets context.validate.expiration boolean. Defaults to true.
+// WithValidateExpiration sets options.validate.expiration boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidateExpiration(b bool) Option {
-	return func(c *Context) {
-		c.validate.expiration = b
+	return func(o *options) {
+		o.validate.expiration = b
 	}
 }
 
-// WithValidateFuture sets context.validate.futureTime boolean. Defaults to true.
+// WithValidateFuture sets options.validate.futureTime boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidateFuture(b bool) Option {
-	return func(c *Context) {
-		c.validate.futureTime = b
+	return func(o *options) {
+		o.validate.futureTime = b
 	}
 }
 
-// WithValidateDataSize sets context.validate.dataSize boolean. Defaults to true.
+// WithValidateDataSize sets options.validate.dataSize boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidateDataSize(b bool) Option {
-	return func(c *Context) {
-		c.validate.dataSize = b
+	return func(o *options) {
+		o.validate.dataSize = b
 	}
 }
 
-// WithValidatePayloadSize sets context.validate.payloadSize boolean. Defaults to true.
+// WithValidatePayloadSize sets options.validate.payloadSize boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidatePayloadSize(b bool) Option {
-	return func(c *Context) {
-		c.validate.payloadSize = b
+	return func(o *options) {
+		o.validate.payloadSize = b
 	}
 }
 
-// WithValidateVersion sets context.validate.version boolean. Defaults to true.
+// WithValidateVersion sets options.validate.version boolean. Defaults to true.
 // Setting to false will skip validation when using the payload Verify method
 func WithValidateVersion(b bool) Option {
-	return func(c *Context) {
-		c.validate.version = b
+	return func(o *options) {
+		o.validate.version = b
 	}
 }
 
@@ -127,44 +136,57 @@ func verify(p Payload, options ...Option) error {
 // validate takes a payload and set of options and validates
 // the payload itself. This ensures it meets size and version
 // requirements
-func validate(p Payload, options ...Option) error {
-	c := parseOptions(options...)
-	if c.validate.payloadSize {
+func validate(p Payload, opts ...Option) error {
+	o := parseOptions(opts...)
+
+	if o.validate.endpoint != "" {
+		if !p.validEndpoint(o.validate.endpoint) {
+			return errors.New("invalid endpoint")
+		}
+	}
+
+	if o.validate.payloadSize {
 		if !p.validPayloadSize() {
 			return errors.New("MaxPayloadSize exceeded")
 		}
 	}
-	if c.validate.dataSize {
+	if o.validate.dataSize {
 		if !p.validDataSize() {
 			return errors.New("MaxMessageSize exceeded")
 		}
 	}
-	if c.validate.version {
+	if o.validate.version {
 		if !p.validVersion() {
 			return errors.New("invalid payload version")
 		}
 	}
-	if c.validate.expiration {
-		if p.isExpired(c.validate.referenceTime) {
+	if o.validate.expiration {
+		if p.isExpired(o.validate.referenceTime) {
 			return errors.New("payload ttl is expired")
 		}
 	}
-	if c.validate.ttl {
+	if o.validate.ttl {
 		if p.validTTL() {
 			return errors.New("invalid payload ttl")
 		}
 	}
-	if c.validate.futureTime {
-		if p.isInFuture(c.validate.referenceTime) {
+	if o.validate.futureTime {
+		if p.isInFuture(o.validate.referenceTime) {
 			return errors.New("payload timestamp is too far in the future")
 		}
 	}
-	if c.validate.submitTime {
-		if !p.withinSubmitWindow(c.validate.referenceTime) {
+	if o.validate.submitTime {
+		if !p.withinSubmitWindow(o.validate.referenceTime) {
 			return errors.New("timestamp is outside of submit window")
 		}
 	}
 	return nil
+}
+
+// validEndpoint takes a string and attempts to match the URL safe
+// base64 string encoded PubKeyHash and returns a boolean
+func (p Payload) validEndpoint(e string) bool {
+	return e == p.Endpoint()
 }
 
 // validTTL checks that a TTL falls within an acceptable range.

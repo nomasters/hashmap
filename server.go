@@ -70,10 +70,9 @@ func newRouter(s *Storage) *chi.Mux {
 
 	// liberal CORS support for `hashmap-client-js`
 	cors := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-		// ExposedHeaders:   []string{"Link"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 		MaxAge:           60,
 	})

@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/nomasters/hashmap/server"
+	"github.com/nomasters/hashmap/internal/server"
 )
 
 func main() {
 	server.Run()
+
 }

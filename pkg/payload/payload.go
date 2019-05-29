@@ -4,14 +4,16 @@ package payload
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"time"
 
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 	ptypes "github.com/golang/protobuf/ptypes"
-	pb "github.com/nomasters/hashmap/payload/pb"
-	sig "github.com/nomasters/hashmap/sig"
+	pb "github.com/nomasters/hashmap/pkg/payload/pb"
+	sig "github.com/nomasters/hashmap/pkg/sig"
+	blake2b "golang.org/x/crypto/blake2b"
 )
 
 // Version type is used for setting the hashmap implementation version.
@@ -44,10 +46,10 @@ type Payload struct {
 }
 
 // Option is used for interacting with Context when setting options for Generate and Verify
-type Option func(*Context)
+type Option func(*options)
 
-// Context contains private fields used for Option
-type Context struct {
+// options contains private fields used for Option
+type options struct {
 	version   Version
 	timestamp time.Time
 	ttl       time.Duration
@@ -56,31 +58,31 @@ type Context struct {
 
 // WithVersion takes a Version and returns an Option
 func WithVersion(v Version) Option {
-	return func(c *Context) {
-		c.version = v
+	return func(o *options) {
+		o.version = v
 	}
 }
 
 // WithTimestamp takes a time.Time and returns an Option
 func WithTimestamp(t time.Time) Option {
-	return func(c *Context) {
-		c.timestamp = t
+	return func(o *options) {
+		o.timestamp = t
 	}
 }
 
 // WithTTL takes a time.Duration and returns an Option
 func WithTTL(d time.Duration) Option {
-	return func(c *Context) {
-		c.ttl = d
+	return func(o *options) {
+		o.ttl = d
 	}
 }
 
 // parseOptions takes a arbitrary number of Option funcs and returns a Context with defaults
 // for version, timestamp, and ttl, and validate rules.
-func parseOptions(options ...Option) Context {
+func parseOptions(opts ...Option) options {
 	now := time.Now()
 
-	c := Context{
+	o := options{
 		version:   defaultVersion,
 		timestamp: now,
 		ttl:       defaultTTL,
@@ -95,10 +97,10 @@ func parseOptions(options ...Option) Context {
 			referenceTime: now,
 		},
 	}
-	for _, option := range options {
-		option(&c)
+	for _, opt := range opts {
+		opt(&o)
 	}
-	return c
+	return o
 }
 
 // Unmarshal takes a byte slice and attempts to decode the protobuf wire
@@ -177,15 +179,15 @@ func Marshal(p Payload) ([]byte, error) {
 // This function defaults to time.Now() and the default TTL of 24 hours. Generate Requires
 // at least one signer, but can sign with many signers. Sort order is important though, The unique
 // order of the signers pubkeys are what is responsible for generating the endpoint hash.
-func Generate(message []byte, signers []sig.Signer, options ...Option) (Payload, error) {
+func Generate(message []byte, signers []sig.Signer, opts ...Option) (Payload, error) {
 	if len(signers) == 0 {
 		return Payload{}, errors.New("Generate must have at least one signer")
 	}
-	c := parseOptions(options...)
+	o := parseOptions(opts...)
 	p := Payload{
-		Version:   c.version,
-		Timestamp: c.timestamp,
-		TTL:       c.ttl,
+		Version:   o.version,
+		Timestamp: o.timestamp,
+		TTL:       o.ttl,
 		Data:      message,
 	}
 
@@ -224,6 +226,17 @@ func (p Payload) PubKeyBytes() []byte {
 		o = append(o, b.Pub...)
 	}
 	return o
+}
+
+// PubKeyHash returns a byte slice of the blake2b-512 hash of PubKeyBytes
+func (p Payload) PubKeyHash() []byte {
+	b := blake2b.Sum512(p.PubKeyBytes())
+	return b[:]
+}
+
+// Endpoint returns a url-safe base64 encoded endpoint string of PubKeyHash
+func (p Payload) Endpoint() string {
+	return base64.URLEncoding.EncodeToString(p.PubKeyHash())
 }
 
 // uint64ToBytes converts uint64 numbers into a byte slice in Big Endian format

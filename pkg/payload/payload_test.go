@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	sig "github.com/nomasters/hashmap/sig"
+	sig "github.com/nomasters/hashmap/pkg/sig"
+	blake2b "golang.org/x/crypto/blake2b"
 )
 
 func TestGenerate(t *testing.T) {
@@ -88,6 +89,20 @@ func TestPayloadCoreMethods(t *testing.T) {
 		}
 		if !bytes.Equal(refConcat, p.PubKeyBytes()) {
 			t.Error("concatenated pubkey bytes are invalid")
+		}
+	})
+	t.Run("PubKeyHash", func(t *testing.T) {
+		var signers []sig.Signer
+		sig1 := sig.GenNaclSign()
+		signers = append(signers, sig1)
+		message := []byte("")
+		p, err := Generate(message, signers)
+		if err != nil {
+			t.Error(err)
+		}
+		b := blake2b.Sum512(sig1.PrivateKey[32:])
+		if !bytes.Equal(b[:], p.PubKeyHash()) {
+			t.Error("pubkey hash bytes are invalid")
 		}
 	})
 }

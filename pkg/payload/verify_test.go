@@ -1,10 +1,11 @@
 package payload
 
 import (
+	"encoding/base64"
 	"testing"
 	"time"
 
-	sig "github.com/nomasters/hashmap/sig"
+	sig "github.com/nomasters/hashmap/pkg/sig"
 )
 
 func TestVerify(t *testing.T) {
@@ -72,13 +73,27 @@ func TestPayloadMethods(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Parallel()
 	var signers []sig.Signer
-	signers = append(signers, sig.GenNaclSign())
+	s1 := sig.GenNaclSign()
+	signers = append(signers, s1)
 	now := time.Now()
 	message := []byte("hello, world")
 	p, _ := Generate(message, signers, WithTimestamp(now))
 
 	t.Run("Normal Operation", func(t *testing.T) {
 		if err := validate(p); err != nil {
+			t.Error(err)
+		}
+	})
+	t.Run("Endpoint", func(t *testing.T) {
+		p, _ := Generate(message, signers, WithTimestamp(now))
+		e := base64.URLEncoding.EncodeToString(p.PubKeyHash())
+		if err := validate(p, WithValidateEndpoint(e)); err != nil {
+			t.Error(err)
+		}
+		if err := validate(p, WithValidateEndpoint("BAD_ENDPOINT")); err == nil {
+			t.Error("validate did not catch MaxMessageSize")
+		}
+		if err := validate(p, WithValidateEndpoint("")); err != nil {
 			t.Error(err)
 		}
 	})

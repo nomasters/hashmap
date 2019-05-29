@@ -14,8 +14,8 @@ const (
 	maxRedisTTL         = 604800
 )
 
-// RedisOptions specific to RedisStorage
-type RedisOptions struct {
+// redisOptions specific to RedisStorage
+type redisOptions struct {
 	endpoint          string
 	auth              string
 	maxIdle           int
@@ -29,63 +29,63 @@ type RedisOptions struct {
 
 // WithRedisEndpoint takes a string and returns an Option
 func WithRedisEndpoint(e string) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.endpoint = e
 	}
 }
 
 // WithRedisAuth takes a string and returns an Option
 func WithRedisAuth(a string) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.auth = a
 	}
 }
 
 // WithRedisMaxIdle takes an int and returns an Option
 func WithRedisMaxIdle(m int) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.maxIdle = m
 	}
 }
 
 // WithRedisMaxActive takes an int and returns an Option
 func WithRedisMaxActive(m int) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.maxActive = m
 	}
 }
 
 // WithRedisIdleTimeout takes a time.Duration and returns an Option
 func WithRedisIdleTimeout(d time.Duration) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.idleTimeout = d
 	}
 }
 
 // WithRedisWait takes a bool and returns an Option
 func WithRedisWait(b bool) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.wait = b
 	}
 }
 
 // WithRedisMaxConnLifetime takes a bool and returns an Option
 func WithRedisMaxConnLifetime(d time.Duration) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.maxConnLifetime = d
 	}
 }
 
 // WithRedisTLS takes a bool and returns an Option
 func WithRedisTLS(b bool) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.tls = b
 	}
 }
 
 // WithRedisDialTLSSkipVerify takes a bool and returns an Option
 func WithRedisDialTLSSkipVerify(b bool) Option {
-	return func(c *Context) {
+	return func(c *context) {
 		c.redis.dialTLSSkipVerify = b
 	}
 }
