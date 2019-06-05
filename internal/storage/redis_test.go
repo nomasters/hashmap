@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -31,17 +32,21 @@ func TestRedisStore(t *testing.T) {
 		WithRedisWait(true),
 		WithRedisTLS(false),
 	)
+	defer s.Close()
 
 	t.Run("DialErr", func(t *testing.T) {
 		s := NewRedisStore(WithRedisEndpoint(":58555"))
-		if err := s.Delete("dialFail"); err == nil {
-			t.Error(err)
+		if _, err := s.Get("dialFail"); err == nil {
+			t.Error("failed to catch dial error on get")
+		}
+		if err := s.Set("dialFail", []byte{}, 0, time.Now()); err == nil {
+			t.Error("failed to catch dial error on set")
 		}
 	})
 
 	t.Run("AuthErr", func(t *testing.T) {
 		s := NewRedisStore(WithRedisEndpoint(r.Addr()), WithRedisAuth("wrong_auth"))
-		if err := s.Delete("authFail"); err == nil {
+		if _, err := s.Get("authFail"); err == nil {
 			t.Error(err)
 		}
 	})
@@ -49,8 +54,17 @@ func TestRedisStore(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		key := "get1"
 		expected := []byte("exp1")
-		encoded := base64.StdEncoding.EncodeToString(expected)
-		r.Set(key, encoded)
+		timestamp := time.Now()
+		v := redisVal{
+			Payload:   base64.StdEncoding.EncodeToString(expected),
+			Timestamp: timestamp.UnixNano(),
+		}
+		enc, err := json.Marshal(v)
+		if err != nil {
+			t.Error(err)
+		}
+
+		r.Set(key, string(enc))
 
 		tests := []struct {
 			key         string
@@ -80,41 +94,49 @@ func TestRedisStore(t *testing.T) {
 			}
 			if err != nil {
 				t.Error(test.description, err)
+				continue
 			}
 			if !bytes.Equal(test.expected, actual) {
-				t.Errorf("actual: %v, expected: %v description: %v\n", actual, test.expected, test.description)
+				t.Errorf("actual: %v, expected: %s description: %v\n", actual, test.expected, test.description)
 			}
 		}
 	})
 
 	t.Run("Set", func(t *testing.T) {
+		now := time.Now()
+
 		tests := []struct {
 			key         string
 			expected    []byte
-			ttl         Option
+			ttl         time.Duration
+			timestamp   time.Time
 			fastForward time.Duration
 			description string
+			shouldErr   bool
 		}{
 			{
 				key:         "set1",
 				expected:    []byte("exp1"),
-				ttl:         WithTTL(0 * time.Second),
-				fastForward: (defaultRedisTTL + 1) * time.Second,
-				description: "should set expected value",
+				ttl:         0 * time.Second,
+				timestamp:   now,
+				fastForward: safeTTL(0*time.Second) + time.Second,
+				description: "should conform to minTTL",
 			},
 			{
 				key:         "set2",
 				expected:    []byte("exp2"),
-				ttl:         WithTTL((maxRedisTTL + 30) * time.Second),
-				fastForward: (maxRedisTTL + 1) * time.Second,
-				description: "should conform to maxRedisTTL",
+				ttl:         maxTTL + 30*time.Second,
+				timestamp:   now,
+				fastForward: maxTTL + time.Second,
+				description: "should conform to maxTTL",
 			},
 			{
 				key:         "set3",
 				expected:    []byte("exp3"),
-				ttl:         WithTTL(1 * time.Second),
-				fastForward: 2 * time.Second,
-				description: "should conform to short TTL",
+				ttl:         minTTL + time.Second,
+				timestamp:   now,
+				fastForward: minTTL + 2*time.Second,
+				description: "should conform to standard TTL",
 			},
 		}
 
@@ -123,56 +145,42 @@ func TestRedisStore(t *testing.T) {
 				t.Errorf("key: %v should not exist", test.key)
 				continue
 			}
-			err := s.Set(test.key, test.expected, test.ttl)
+			err := s.Set(test.key, test.expected, test.ttl, test.timestamp)
+			if test.shouldErr {
+				if err == nil {
+					t.Error(test.description)
+				}
+				continue
+			}
 			if err != nil {
 				t.Error(test.description, err)
 				continue
 			}
-			encoded := base64.StdEncoding.EncodeToString(test.expected)
-			r.CheckGet(t, test.key, encoded)
+			if _, err := s.Get(test.key); err != nil {
+				t.Error(test.key, "failed to get")
+			}
 			r.FastForward(test.fastForward)
-			if _, err := r.Get(test.key); err == nil {
+			if _, err := s.Get(test.key); err == nil {
 				t.Errorf("key: %v should not exist after ttl", test.key)
 			}
 		}
 	})
-	t.Run("Delete", func(t *testing.T) {
-		tests := []struct {
-			key         string
-			value       string
-			exists      bool
-			description string
-		}{
-			{
-				key:         "del1",
-				value:       "exp1",
-				exists:      true,
-				description: "delete an existing key",
-			},
-			{
-				key:         "del1",
-				exists:      false,
-				description: "delete an nonexisting key",
-			},
+	t.Run("CheckTimeStampReplay", func(t *testing.T) {
+		k := "replayattack"
+		v1 := []byte("hello, world")
+		v2 := []byte("bad actor")
+		ttl := time.Second
+		now := time.Unix(0, 1559706661127858000)
+		s.Set(k, v1, ttl, now)
+		if err := s.Set(k, v2, ttl, now.Add(-time.Millisecond)); err == nil {
+			t.Error("failed to catch invalid timestamp")
 		}
-
-		for _, test := range tests {
-			if test.exists {
-				r.Set(test.key, "exp1")
-				s.Delete(test.key)
-				if r.Exists(test.key) {
-					t.Error(test.description, test.key)
-				}
-				continue
-			}
-			if r.Exists(test.key) {
-				t.Error(test.description, test.key)
-				return
-			}
-			if err := s.Delete(test.key); err != nil {
-				t.Error(test.description)
-			}
-
+	})
+	t.Run("Malformed_Get", func(t *testing.T) {
+		k := "invalidGet"
+		r.Set(k, "malformed")
+		if _, err := s.Get(k); err == nil {
+			t.Error("failed to catch malformed value")
 		}
 	})
 }

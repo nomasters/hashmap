@@ -146,14 +146,17 @@ type redisVal struct {
 func (s *RedisStore) Get(key string) ([]byte, error) {
 	c := s.pool.Get()
 	defer c.Close()
+
 	data, err := redis.Bytes(c.Do("GET", key))
 	if err != nil {
 		return []byte{}, err
 	}
+
 	var v redisVal
 	if err := json.Unmarshal(data, &v); err != nil {
 		return []byte{}, err
 	}
+
 	return base64.StdEncoding.DecodeString(v.Payload)
 }
 
@@ -164,18 +167,14 @@ func (s *RedisStore) Set(key string, value []byte, ttl time.Duration, timestamp 
 		Payload:   base64.StdEncoding.EncodeToString(value),
 		Timestamp: timestamp.UnixNano(),
 	}
-
-	enc, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
+	enc, _ := json.Marshal(v)
 
 	// safeSetLua is a lua script that adds a conditional check before setting a key
 	safeSetLua := `
 		if redis.call("EXISTS", KEYS[1]) == 1 then
 			local payload = redis.call("GET", KEYS[1])
 			local timestamp = cjson.decode(payload)["timestamp"]
-			if timestamp > tonumber(ARGV[2]) then
+			if timestamp/1000 >= tonumber(ARGV[2])/1000 then
 				return nil
 			end
 		end

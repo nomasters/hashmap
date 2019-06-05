@@ -17,8 +17,8 @@ const (
 	RedisEngine
 )
 
-const (
-	minTTL = payload.MaxSubmitWindow * 2 // to prevent replay attacks against SubmitWindow
+var (
+	minTTL = payload.MaxSubmitWindow*2 + time.Second // to prevent replay attacks against SubmitWindow
 	maxTTL = payload.MaxTTL
 )
 
@@ -103,7 +103,7 @@ func WithRedisOptions(opts ...RedisOption) Option {
 // it also ensures that the maxTTL is no greater than allowed.
 func safeTTL(ttl time.Duration) time.Duration {
 	if ttl <= minTTL {
-		return minTTL + time.Second
+		return minTTL
 	}
 	if ttl > maxTTL {
 		return maxTTL
