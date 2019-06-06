@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,6 +24,7 @@ const (
 	defaultPort            = 3000
 	defaultThrottleLimit   = 100
 	defaultThrottleBacklog = 100
+	endpointHashLength     = 88 // char count for blake2b-512 base64 string
 )
 
 // Option is func signature used for setting Server Options
@@ -52,14 +54,14 @@ func (o options) addrString() string {
 	return fmt.Sprintf("%v:%v", o.host, port)
 }
 
-func newRouter(s storage.Storage, o options) http.Handler {
+func newRouter(s storage.GetSetCloser, o options) http.Handler {
 	r := chi.NewRouter()
 	r.Use(newCors(o.allowedHeaders, o.allowedOrigins).Handler)
 	r.Use(middleware.Timeout(o.timeout))
 	r.Use(middleware.ThrottleBacklog(o.limit, o.backlog, o.timeout))
 	r.Use(middleware.Heartbeat("/health"))
-	r.Post("/", submitPayloadHandler(s))
-	r.Get("/{endpoint}", get(s))
+	r.Post("/", postPayloadHandler(s))
+	r.Get("/{hash}", getPayloadByHashHandler(s))
 	return r
 }
 
@@ -81,7 +83,7 @@ func badRequest(w http.ResponseWriter, v ...interface{}) {
 // uses a limited reader set to payload.MaxPayloadSize and attempts to verify
 // and validate the payload in ServerMode. ServerMode verification adds an additional
 // time horizon check to ensure that a payload
-func submitPayloadHandler(s storage.Storage) http.HandlerFunc {
+func postPayloadHandler(s storage.Setter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := &io.LimitedReader{R: r.Body, N: payload.MaxPayloadSize}
 		body, err := ioutil.ReadAll(l)
@@ -99,7 +101,7 @@ func submitPayloadHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 		k := p.Endpoint()
-		if err := s.Set(k, body, storage.WithTTL(p.TTL)); err != nil {
+		if err := s.Set(k, body, p.TTL, p.Timestamp); err != nil {
 			badRequest(w, err)
 			return
 		}
@@ -107,19 +109,38 @@ func submitPayloadHandler(s storage.Storage) http.HandlerFunc {
 	}
 }
 
-func get(s storage.Storage) http.HandlerFunc {
+func getPayloadByHashHandler(s storage.Getter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// k := chi.URLParam(r, "endpoint")
+		k := chi.URLParam(r, "hash")
+		if len(k) != endpointHashLength {
+			badRequest(w, "get error. invalid hash length for:", k)
+			return
+		}
+		if _, err := base64.URLEncoding.DecodeString(k); err != nil {
+			badRequest(w, "get error. base64 decode failed for:", k, err)
+			return
+		}
 
-		// TODO:
-		// - validate length
-		// - validate base64
-
-		// get endpoint
-		// unmarshal
-		// validate
-		// write bytes
-
+		pb, err := s.Get(k)
+		if err != nil {
+			badRequest(w, "get error. storage get error for:", k, err)
+			return
+		}
+		p, err := payload.Unmarshal(pb)
+		if err != nil {
+			badRequest(w, "get error. payload unmarshal failed for:", k, err)
+			return
+		}
+		if k != p.Endpoint() {
+			err := fmt.Errorf("get error. payload endpoint mismatch. expected: %v found:%v ", k, p.Endpoint())
+			badRequest(w, err)
+			return
+		}
+		if err := p.Verify(); err != nil {
+			badRequest(w, "failed get verify", k, err)
+			return
+		}
+		w.Write(pb)
 	}
 }
 
@@ -248,7 +269,7 @@ func Run(options ...Option) {
 	var srv http.Server
 
 	c := parseOptions(options...)
-	s, err := storage.NewStorage(c.storage...)
+	s, err := storage.New(c.storage...)
 	if err != nil {
 		log.Fatal(err)
 	}

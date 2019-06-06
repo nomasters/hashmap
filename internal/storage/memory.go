@@ -48,7 +48,7 @@ func (s *MemoryStore) Set(key string, value []byte, ttl time.Duration, timestamp
 
 	v, ok := s.internal[key]
 	if ok {
-		if v.timestamp.UnixNano() > timestamp.UnixNano() {
+		if v.timestamp.UnixNano() >= timestamp.UnixNano() {
 			s.Unlock()
 			return errInvalidTimestamp
 		}
