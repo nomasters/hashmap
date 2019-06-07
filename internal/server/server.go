@@ -43,6 +43,7 @@ type options struct {
 	storage        []storage.Option
 	allowedHeaders []string
 	allowedOrigins []string
+	baseRoute      string
 }
 
 // addrString returns a string formatted as expected by the net libraries in go.
@@ -59,9 +60,11 @@ func newRouter(s storage.GetSetCloser, o options) http.Handler {
 	r.Use(newCors(o.allowedHeaders, o.allowedOrigins).Handler)
 	r.Use(middleware.Timeout(o.timeout))
 	r.Use(middleware.ThrottleBacklog(o.limit, o.backlog, o.timeout))
-	r.Use(middleware.Heartbeat("/health"))
-	r.Post("/", postPayloadHandler(s))
-	r.Get("/{hash}", getPayloadByHashHandler(s))
+	r.Route(o.baseRoute, func(r chi.Router) {
+		r.Use(middleware.Heartbeat("/health"))
+		r.Post("/", postPayloadHandler(s))
+		r.Get("/{hash}", getPayloadByHashHandler(s))
+	})
 	return r
 }
 
@@ -73,16 +76,11 @@ func badRequest(w http.ResponseWriter, v ...interface{}) {
 	http.Error(w, http.StatusText(400), http.StatusBadRequest)
 }
 
-// TODO: mitigate a possible replay attack where a previous timestamp could be used
-// Storage needs to track timestamps within a time horizon so that an older timestamp
-// can't be submitted after a new one. This is to deal with the situation where Bob
-// submits 5 messages in rapid succession within the time horizon. Eve grabs a copy of
-// a message and attempts to overwrite Bob's latest message with a previous message
-
-// submitPayloadHandler takes a storage interface and returns a HandlerFunc that
+// postPayloadHandler takes a storage.Setter and returns a http.HandlerFunc that
 // uses a limited reader set to payload.MaxPayloadSize and attempts to verify
 // and validate the payload in ServerMode. ServerMode verification adds an additional
-// time horizon check to ensure that a payload
+// time horizon check to ensure that a payload is only written to storage within a
+// strict time horizon.
 func postPayloadHandler(s storage.Setter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := &io.LimitedReader{R: r.Body, N: payload.MaxPayloadSize}
@@ -168,6 +166,7 @@ func parseOptions(opts ...Option) (o options) {
 		timeout: defaultTimeout,
 		limit:   defaultThrottleLimit,
 		backlog: defaultThrottleBacklog,
+		baseRoute: "/",
 	}
 	for _, option := range opts {
 		option(&o)
@@ -238,24 +237,31 @@ func WithKeyFile(f string) Option {
 	}
 }
 
-// WithTimeout takes a string and returns an Option func for setting options.WithTimeout
+// WithTimeout takes a string and returns an Option func for setting options.timeout
 func WithTimeout(d time.Duration) Option {
 	return func(o *options) {
 		o.timeout = d
 	}
 }
 
-// WithThrottle takes an int and returns an Option func for setting options.WithThrottle
+// WithThrottle takes an int and returns an Option func for setting options.limit
 func WithThrottle(t int) Option {
 	return func(o *options) {
 		o.limit = t
 	}
 }
 
-// WithThrottleBacklog takes an int and returns an Option func for setting options.WithThrottleBacklog
+// WithThrottleBacklog takes an int and returns an Option func for setting options.backlog
 func WithThrottleBacklog(t int) Option {
 	return func(o *options) {
 		o.backlog = t
+	}
+}
+
+// WithBaseRoute takes a string and returns an Option func for setting options.baseRoute
+func WithBaseRoute(b string) Option {
+	return func(o *options) {
+		o.baseRoute = b
 	}
 }
 
@@ -268,21 +274,22 @@ func WithThrottleBacklog(t int) Option {
 func Run(options ...Option) {
 	var srv http.Server
 
-	c := parseOptions(options...)
-	s, err := storage.New(c.storage...)
+	o := parseOptions(options...)
+	s, err := storage.New(o.storage...)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer s.Close()
 
-	srv.Addr = c.addrString()
-	srv.Handler = newRouter(s, c)
+	srv.Addr = o.addrString()
+	srv.Handler = newRouter(s, o)
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
 		defer cancel()
 		// We received an interrupt signal, shut down.
 		if err := srv.Shutdown(ctx); err != nil {
@@ -291,9 +298,9 @@ func Run(options ...Option) {
 		close(idleConnsClosed)
 	}()
 
-	log.Printf("Server started on: %v\n", c.addrString())
-	if c.tls {
-		if err := srv.ListenAndServeTLS(c.certFile, c.keyFile); err != http.ErrServerClosed {
+	log.Printf("Server started on: %v\n", o.addrString())
+	if o.tls {
+		if err := srv.ListenAndServeTLS(o.certFile, o.keyFile); err != http.ErrServerClosed {
 			log.Printf("SERVER ERROR: %v", err)
 		}
 	} else {

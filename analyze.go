@@ -9,7 +9,7 @@ import (
 func AnalyzePayload(input []byte) error {
 	p := Payload{}
 	if err := json.Unmarshal(input, &p); err != nil {
-		return fmt.Errorf("invalid payload: %v\n", err)
+		return fmt.Errorf("invalid payload: %v", err)
 	}
 
 	// Outputs Payload as Indented JSON string

@@ -42,13 +42,13 @@ func (s *MemoryStore) Get(key string) ([]byte, error) {
 }
 
 // Set takes a key string and byte slice value and returns an error. It uses a mutex write lock for safety.
-// It always returns nil.
+// If an existing key value pair exists, it checks the timestamp and rejects <= timestamp submissions.
 func (s *MemoryStore) Set(key string, value []byte, ttl time.Duration, timestamp time.Time) error {
 	s.Lock()
 
 	v, ok := s.internal[key]
 	if ok {
-		if v.timestamp.UnixNano() >= timestamp.UnixNano() {
+		if v.timestamp.UnixNano()/1000 >= timestamp.UnixNano()/1000 {
 			s.Unlock()
 			return errInvalidTimestamp
 		}

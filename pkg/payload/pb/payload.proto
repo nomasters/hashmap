@@ -5,24 +5,19 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 message Payload {
-    
     enum Version {
         V0 = 0;
         V1 = 1;
     }
-
     message SigBundle {
-        
         enum Alg {
             UNKNOWN = 0;
             NACL_SIGN = 1;
         }
-
         Alg alg = 1;
         bytes pub = 2;
         bytes sig = 3;
     }
-
     Version version = 1;
     google.protobuf.Timestamp timestamp = 2;
     google.protobuf.Duration ttl = 3;

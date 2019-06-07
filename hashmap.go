@@ -84,7 +84,8 @@ func (p Payload) Verify() error {
 }
 
 // NewValidator decodes the pubKey, Signature, and DataBytes to byte slices.
-// It then Unmarshals the Data and analyzes the SigMethod, either returning
+// It then 
+//  the Data and analyzes the SigMethod, either returning
 // a Validator or an error.
 func (p Payload) NewValidator() (Validator, error) {
 	pubKey, err := p.PubKeyBytes()
@@ -163,14 +164,14 @@ func (p Payload) GetData() (*Data, error) {
 	return &d, nil
 }
 
-// ValidateTTL checks that a TTL is configured within the boundries of a proper TTL
+// ValidateTTL checks that a TTL is configured within the boundaries of a proper TTL
 // and then checks the TTL against the diff of the timestamp & time.Now().
 // if any of the checks fail, ValidateTTL returns an error
 func (d Data) ValidateTTL() error {
 	t := d.TTL
 
 	if t > DataTTLMax {
-		return fmt.Errorf("message ttl exceeds max allowed of %v\n", DataTTLMax)
+		return fmt.Errorf("message ttl exceeds max allowed of %v", DataTTLMax)
 	}
 
 	if t == 0 {
@@ -200,7 +201,7 @@ func (d Data) ValidateMessageSize() error {
 	}
 
 	if len(data) > MaxMessageBytes {
-		return fmt.Errorf("message exceeds max allowed: %v\n", MaxMessageBytes)
+		return fmt.Errorf("message exceeds max allowed: %v", MaxMessageBytes)
 	}
 	return nil
 }
