@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	baseURL := "http://localhost:3000/hello"
+	baseURL := "http://localhost:3000"
 	contentType := "application/protobuf"
 	resp, err := http.Post(baseURL, contentType, bytes.NewReader(pb))
 	if err != nil {

@@ -1,201 +1,201 @@
-package hashmap
+// package hashmap
 
-import (
-	"bytes"
-	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
+// import (
+// 	"bytes"
+// 	"context"
+// 	"encoding/base64"
+// 	"encoding/json"
+// 	"errors"
+// 	"fmt"
+// 	"net/http"
+// 	"net/http/httptest"
+// 	"strings"
+// 	"testing"
+// 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
+// 	"github.com/stretchr/testify/assert"
+// 	"github.com/stretchr/testify/require"
+// )
 
-const (
-	badData = "8J+ZifCfmYjwn5mK" // base64 encoded monkeys
-)
+// const (
+// 	badData = "8J+ZifCfmYjwn5mK" // base64 encoded monkeys
+// )
 
-func buildExamplePayload(t *testing.T, msg string) *Payload {
-	t.Helper()
-	pk := GenerateKey()
-	opts := GeneratePayloadOptions{}
-	p, err := GeneratePayload(opts, pk)
-	require.NoError(t, err)
-	payload, err := NewPayloadFromReader(bytes.NewReader(p))
-	require.NoError(t, err)
-	return payload
-}
+// func buildExamplePayload(t *testing.T, msg string) *Payload {
+// 	t.Helper()
+// 	pk := GenerateKey()
+// 	opts := GeneratePayloadOptions{}
+// 	p, err := GeneratePayload(opts, pk)
+// 	require.NoError(t, err)
+// 	payload, err := NewPayloadFromReader(bytes.NewReader(p))
+// 	require.NoError(t, err)
+// 	return payload
+// }
 
-var _ Storage = (*badStorage)(nil)
+// var _ Storage = (*badStorage)(nil)
 
-type badStorage struct{}
+// type badStorage struct{}
 
-func (b *badStorage) Get(string) (PayloadWithMetadata, error) {
-	return PayloadWithMetadata{}, errors.New("arbitrary")
-}
-func (b *badStorage) Set(string, PayloadWithMetadata) error { return errors.New("arbitrary") }
-func (b *badStorage) Delete(string) error                   { return errors.New("arbitrary") }
+// func (b *badStorage) Get(string) (PayloadWithMetadata, error) {
+// 	return PayloadWithMetadata{}, errors.New("arbitrary")
+// }
+// func (b *badStorage) Set(string, PayloadWithMetadata) error { return errors.New("arbitrary") }
+// func (b *badStorage) Delete(string) error                   { return errors.New("arbitrary") }
 
-func TestBuildSubmitHandler(T *testing.T) {
-	T.Parallel()
+// func TestBuildSubmitHandler(T *testing.T) {
+// 	T.Parallel()
 
-	T.Run("normal operation", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("normal operation", func(t *testing.T) {
+// 		t.Parallel()
 
-		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
-		require.NoError(t, err)
+// 		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
+// 		require.NoError(t, err)
 
-		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
-		require.NoError(t, err)
+// 		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
+// 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
-		res := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
+// 		res := httptest.NewRecorder()
 
-		newSubmitHandleFunc(s)(res, req)
+// 		newSubmitHandleFunc(s)(res, req)
 
-		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
-		assert.NotEmpty(t, res.Body.String())
-	})
+// 		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
+// 		assert.NotEmpty(t, res.Body.String())
+// 	})
 
-	T.Run("with too large a message", func(t *testing.T) {
-		t.Skip() // TODO: figure this out
+// 	T.Run("with too large a message", func(t *testing.T) {
+// 		t.Skip() // TODO: figure this out
 
-		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
-		require.NoError(t, err)
+// 		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
+// 		require.NoError(t, err)
 
-		p := buildExamplePayload(t, "")
+// 		p := buildExamplePayload(t, "")
 
-		d := Data{
-			Message:   tooMuchData,
-			Timestamp: time.Now().Unix(),
-			TTL:       DataTTLMax,
-			SigMethod: DefaultSigMethod,
-			Version:   Version,
-		}
-		data, err := json.Marshal(d)
-		p.Data = base64.StdEncoding.EncodeToString(data)
+// 		d := Data{
+// 			Message:   tooMuchData,
+// 			Timestamp: time.Now().Unix(),
+// 			TTL:       DataTTLMax,
+// 			SigMethod: DefaultSigMethod,
+// 			Version:   Version,
+// 		}
+// 		data, err := json.Marshal(d)
+// 		p.Data = base64.StdEncoding.EncodeToString(data)
 
-		body, err := json.Marshal(&p)
-		require.NoError(t, err)
+// 		body, err := json.Marshal(&p)
+// 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(body))
-		res := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(body))
+// 		res := httptest.NewRecorder()
 
-		newSubmitHandleFunc(s)(res, req)
+// 		newSubmitHandleFunc(s)(res, req)
 
-		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
-	})
+// 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
+// 	})
 
-	T.Run("with an invalid TTL", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("with an invalid TTL", func(t *testing.T) {
+// 		t.Parallel()
 
-		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
-		require.NoError(t, err)
+// 		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
+// 		require.NoError(t, err)
 
-		exampleBody, err := json.Marshal(examplePayload)
-		require.NoError(t, err)
+// 		exampleBody, err := json.Marshal(examplePayload)
+// 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
-		res := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
+// 		res := httptest.NewRecorder()
 
-		newSubmitHandleFunc(s)(res, req)
+// 		newSubmitHandleFunc(s)(res, req)
 
-		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
-		assert.Equal(t, res.Body.String(), "ttl exceeded\n")
-	})
+// 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
+// 		assert.Equal(t, res.Body.String(), "ttl exceeded\n")
+// 	})
 
-	T.Run("with invalid body", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("with invalid body", func(t *testing.T) {
+// 		t.Parallel()
 
-		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
-		require.NoError(t, err)
+// 		s, err := NewStorage(StorageOptions{Engine: MemoryStorage})
+// 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "http://localhost", strings.NewReader(`lol this is bad`))
-		res := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodPost, "http://localhost", strings.NewReader(`lol this is bad`))
+// 		res := httptest.NewRecorder()
 
-		newSubmitHandleFunc(s)(res, req)
+// 		newSubmitHandleFunc(s)(res, req)
 
-		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
-		assert.Equal(t, res.Body.String(), "invalid payload\n")
-	})
+// 		assert.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
+// 		assert.Equal(t, res.Body.String(), "invalid payload\n")
+// 	})
 
-	T.Run("with invalid storage", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("with invalid storage", func(t *testing.T) {
+// 		t.Parallel()
 
-		bs := &badStorage{}
+// 		bs := &badStorage{}
 
-		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
-		require.NoError(t, err)
+// 		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
+// 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
-		res := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
+// 		res := httptest.NewRecorder()
 
-		newSubmitHandleFunc(bs)(res, req)
+// 		newSubmitHandleFunc(bs)(res, req)
 
-		assert.Equal(t, http.StatusInternalServerError, res.Result().StatusCode)
-		assert.Equal(t, res.Body.String(), "internal error saving payload\n")
-	})
-}
+// 		assert.Equal(t, http.StatusInternalServerError, res.Result().StatusCode)
+// 		assert.Equal(t, res.Body.String(), "internal error saving payload\n")
+// 	})
+// }
 
-func TestGetPayloadHandleFunc(T *testing.T) {
-	T.Parallel()
+// func TestGetPayloadHandleFunc(T *testing.T) {
+// 	T.Parallel()
 
-	T.Run("normal operation", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("normal operation", func(t *testing.T) {
+// 		t.Parallel()
 
-		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
-		require.NoError(t, err)
+// 		exampleBody, err := json.Marshal(buildExamplePayload(t, "whatever"))
+// 		require.NoError(t, err)
 
-		testReq := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
-		res := httptest.NewRecorder()
-		req := testReq.WithContext(context.WithValue(context.Background(), payloadCtxKey, Payload{}))
+// 		testReq := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(exampleBody))
+// 		res := httptest.NewRecorder()
+// 		req := testReq.WithContext(context.WithValue(context.Background(), payloadCtxKey, Payload{}))
 
-		getPayloadHandleFunc(res, req)
+// 		getPayloadHandleFunc(res, req)
 
-		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
-		assert.Equal(t, `{"data":"","sig":"","pubkey":""}`, res.Body.String())
-	})
-}
+// 		assert.Equal(t, http.StatusOK, res.Result().StatusCode)
+// 		assert.Equal(t, `{"data":"","sig":"","pubkey":""}`, res.Body.String())
+// 	})
+// }
 
-func testHandler(called *bool) func(http.Handler) http.Handler {
-	return func(http.Handler) http.Handler {
-		fn := func(rw http.ResponseWriter, req *http.Request) {
-			*called = true
-		}
-		return http.HandlerFunc(fn)
-	}
-}
+// func testHandler(called *bool) func(http.Handler) http.Handler {
+// 	return func(http.Handler) http.Handler {
+// 		fn := func(rw http.ResponseWriter, req *http.Request) {
+// 			*called = true
+// 		}
+// 		return http.HandlerFunc(fn)
+// 	}
+// }
 
-func TestBuildPrivateKeyHashMiddleware(T *testing.T) {
-	T.Parallel()
+// func TestBuildPrivateKeyHashMiddleware(T *testing.T) {
+// 	T.Parallel()
 
-	T.Run("normal operation", func(t *testing.T) {
-		t.Parallel()
+// 	T.Run("normal operation", func(t *testing.T) {
+// 		t.Parallel()
 
-		examplePayload := buildExamplePayload(t, "hey")
-		pk, err := examplePayload.PubKeyBytes()
-		require.NoError(t, err)
+// 		examplePayload := buildExamplePayload(t, "hey")
+// 		pk, err := examplePayload.PubKeyBytes()
+// 		require.NoError(t, err)
 
-		hash := MultiHashToString(pk)
-		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost/%s", hash), nil)
-		res := httptest.NewRecorder()
+// 		hash := MultiHashToString(pk)
+// 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost/%s", hash), nil)
+// 		res := httptest.NewRecorder()
 
-		s, _ := NewStorage(StorageOptions{Engine: MemoryStorage})
-		pwm := PayloadWithMetadata{
-			Payload: *examplePayload,
-			// TODO add metadata stuff
-		}
-		s.Set(hash, pwm)
-		r := newRouter(&s)
-		r.ServeHTTP(res, req)
+// 		s, _ := NewStorage(StorageOptions{Engine: MemoryStorage})
+// 		pwm := PayloadWithMetadata{
+// 			Payload: *examplePayload,
+// 			// TODO add metadata stuff
+// 		}
+// 		s.Set(hash, pwm)
+// 		r := newRouter(&s)
+// 		r.ServeHTTP(res, req)
 
-		assert.Equal(t, http.StatusOK, res.Code)
-		//assert.Equal(t, ``, res.Body.String())
-	})
-}
+// 		assert.Equal(t, http.StatusOK, res.Code)
+// 		//assert.Equal(t, ``, res.Body.String())
+// 	})
+// }

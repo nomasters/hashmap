@@ -27,6 +27,54 @@ const (
 	endpointHashLength     = 88 // char count for blake2b-512 base64 string
 )
 
+// Run takes an arbitrary number of options and runs a server. The important steps here
+// are that it configured a storage interface and wires that into a router to be used
+// by the server handler. The runtime also leverages the Shutdown method to attempt a
+// graceful shutdown in the event of an Interrupt signal. The shutdown process attempts
+// to wait for all connections to close but is limited by the server timeout configuration
+// which is passed into the context for the shutdown.
+func Run(options ...Option) {
+	var srv http.Server
+
+	o := parseOptions(options...)
+	s, err := storage.New(o.storage...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
+
+	srv.Addr = o.addrString()
+	srv.Handler = newRouter(s, o)
+
+	idleConnsClosed := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
+		defer cancel()
+		// We received an interrupt signal, shut down.
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("SERVER SHUTDOWN ERROR: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	log.Printf("Server started on: %v\n", o.addrString())
+	if o.tls {
+		if err := srv.ListenAndServeTLS(o.certFile, o.keyFile); err != http.ErrServerClosed {
+			log.Printf("SERVER ERROR: %v", err)
+		}
+	} else {
+		log.Println("WARNING: running in NON-TLS MODE")
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Printf("SERVER ERROR: %v", err)
+		}
+	}
+	<-idleConnsClosed
+	log.Println("\n...shutdown complete")
+}
+
 // Option is func signature used for setting Server Options
 type Option func(*options)
 
@@ -118,7 +166,6 @@ func getPayloadByHashHandler(s storage.Getter) http.HandlerFunc {
 			badRequest(w, "get error. base64 decode failed for:", k, err)
 			return
 		}
-
 		pb, err := s.Get(k)
 		if err != nil {
 			badRequest(w, "get error. storage get error for:", k, err)
@@ -129,12 +176,7 @@ func getPayloadByHashHandler(s storage.Getter) http.HandlerFunc {
 			badRequest(w, "get error. payload unmarshal failed for:", k, err)
 			return
 		}
-		if k != p.Endpoint() {
-			err := fmt.Errorf("get error. payload endpoint mismatch. expected: %v found:%v ", k, p.Endpoint())
-			badRequest(w, err)
-			return
-		}
-		if err := p.Verify(); err != nil {
+		if err := p.Verify(payload.WithValidateEndpoint(k)); err != nil {
 			badRequest(w, "failed get verify", k, err)
 			return
 		}
@@ -263,52 +305,4 @@ func WithBaseRoute(b string) Option {
 	return func(o *options) {
 		o.baseRoute = b
 	}
-}
-
-// Run takes an arbitrary number of options and runs a server. The important steps here
-// are that it configured a storage interface and wires that into a router to be used
-// by the server handler. The runtime also leverages the Shutdown method to attempt a
-// graceful shutdown in the event of an Interrupt signal. The shutdown process attempts
-// to wait for all connections to close but is limited by the server timeout configuration
-// which is passed into the context for the shutdown.
-func Run(options ...Option) {
-	var srv http.Server
-
-	o := parseOptions(options...)
-	s, err := storage.New(o.storage...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer s.Close()
-
-	srv.Addr = o.addrString()
-	srv.Handler = newRouter(s, o)
-
-	idleConnsClosed := make(chan struct{})
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-		ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
-		defer cancel()
-		// We received an interrupt signal, shut down.
-		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("SERVER SHUTDOWN ERROR: %v", err)
-		}
-		close(idleConnsClosed)
-	}()
-
-	log.Printf("Server started on: %v\n", o.addrString())
-	if o.tls {
-		if err := srv.ListenAndServeTLS(o.certFile, o.keyFile); err != http.ErrServerClosed {
-			log.Printf("SERVER ERROR: %v", err)
-		}
-	} else {
-		log.Println("WARNING: running in NON-TLS MODE")
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Printf("SERVER ERROR: %v", err)
-		}
-	}
-	<-idleConnsClosed
-	log.Println("\n...shutdown complete")
 }

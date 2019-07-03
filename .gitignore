@@ -13,3 +13,7 @@ coverage.txt
 vendor
 .idea
 node_modules
+
+
+#hashmap specific files
+*.keyset

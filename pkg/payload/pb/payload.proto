@@ -13,6 +13,7 @@ message Payload {
         enum Alg {
             UNKNOWN = 0;
             NACL_SIGN = 1;
+            XMSS_SHA2_10_256 = 2;
         }
         Alg alg = 1;
         bytes pub = 2;

@@ -8,6 +8,8 @@ const (
 	_ Alg = iota
 	// AlgNaClSign is meant for Nacl Sign implementations
 	AlgNaClSign
+	// AlgXMSS10 is meant for xmss sha2_10_256
+	AlgXMSS10
 )
 
 // Bundle is used to encapsulate an Algorithm implementation, A Public Key, and a Signature.
@@ -30,6 +32,8 @@ func Verify(message []byte, bundle Bundle) bool {
 	switch bundle.Alg {
 	case AlgNaClSign:
 		return VerifyNaclSign(message, bundle)
+	case AlgXMSS10:
+		return VerifyXMSS10(message, bundle)
 	}
 	return false
 }
