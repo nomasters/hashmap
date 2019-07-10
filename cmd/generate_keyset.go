@@ -30,13 +30,13 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/spf13/cobra"
 	sigutil "github.com/nomasters/hashmap/pkg/sig/sigutil"
+	"github.com/spf13/cobra"
 )
 
 // keySetCmd represents the keySet command
 var keySetCmd = &cobra.Command{
-	Use:   "key-set",
+	Use:   "keyset",
 	Short: "generates a key-set to be used for signing payloads",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -45,12 +45,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: 
+		// TODO:
 		// - Update description
 		// - add flags in for custom outputfile name
 		// - add flags for custom key-set types
-		
-		
+
 		signers := sigutil.NewDefaultSigners()
 		b, err := sigutil.Encode(signers)
 		if err != nil {
@@ -61,8 +60,6 @@ to quickly create a Cobra application.`,
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println("keySet called")
-
 	},
 }
 

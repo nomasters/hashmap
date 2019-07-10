@@ -27,7 +27,8 @@ const (
 )
 
 const (
-	defaultTTL = 24 * time.Hour
+	// DefaultTTL is set to 24 hours
+	DefaultTTL = 24 * time.Hour
 )
 
 var (
@@ -85,7 +86,7 @@ func parseOptions(opts ...Option) options {
 	o := options{
 		version:   defaultVersion,
 		timestamp: now,
-		ttl:       defaultTTL,
+		ttl:       DefaultTTL,
 		validate: validateContext{
 			ttl:           true,
 			expiration:    true,

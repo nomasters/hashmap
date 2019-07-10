@@ -30,3 +30,53 @@ import "github.com/nomasters/hashmap/cmd"
 func main() {
 	cmd.Execute()
 }
+
+/*
+
+This is a description of the CLI tool generally.
+
+
+hashmap version
+
+hashmap generate keys //default of ed25519,xmss_SHA2_10_256 and output current dir
+hashmap generate keys --types=ed25519,xmss_SHA2_10_256
+hashmap generate keys --output=/path
+
+hashmap generate payload --message="hello, world" --ttl=5s --timestamp=now --keys=/path
+
+$ hashmap analyze < payload
+- output as TOML by default, allow out
+Pubkey Hash: 	HASH
+version:		v1
+timestamp: 		1562017791651859000
+ttl:			86400
+sig bundles:
+	sig1:
+		alg: 	nacl_sign
+		pub: 	HASH
+		sig: 	HASH
+	sig2:
+		alg:	xmss_sha2_10_256
+		pub:	HASH
+		sig:	HASH
+
+data: HASH
+
+Valid Payload: 				TRUE
+Valid Version: 				TRUE
+Valid Timestamp: 			TRUE
+Within Submission Window: 	FALSE
+Expired TTL: 				FALSE
+Valid Data Size:			TRUE
+Valid Signatures: 			TRUE
+Verify sig1: 				TRUE
+Verify sig2: 				TRUE
+
+
+hashmap --ge
+
+
+- hashmap
+
+
+*/

@@ -36,6 +36,4 @@ func TestEncodeDecode(t *testing.T) {
 		t.Log("decoded: ", ob.Sig)
 		t.Error("Decode signature mismatch")
 	}
-
-
 }
