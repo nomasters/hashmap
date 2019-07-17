@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	sig "github.com/nomasters/hashmap/pkg/sig"
+	sigutil "github.com/nomasters/hashmap/pkg/sig/sigutil"
 )
 
 const (
@@ -126,7 +126,7 @@ func verify(p Payload, options ...Option) error {
 		return fmt.Errorf("validation error: %v", err)
 	}
 
-	if ok := p.verifySignatures(); !ok {
+	if ok := p.VerifySignatures(); !ok {
 		return errors.New("failed signature verification")
 	}
 
@@ -140,76 +140,76 @@ func validate(p Payload, opts ...Option) error {
 	o := parseOptions(opts...)
 
 	if o.validate.endpoint != "" {
-		if !p.validEndpoint(o.validate.endpoint) {
+		if !p.ValidEndpoint(o.validate.endpoint) {
 			return errors.New("invalid endpoint")
 		}
 	}
 
 	if o.validate.payloadSize {
-		if !p.validPayloadSize() {
+		if !p.ValidPayloadSize() {
 			return errors.New("MaxPayloadSize exceeded")
 		}
 	}
 	if o.validate.dataSize {
-		if !p.validDataSize() {
+		if !p.ValidDataSize() {
 			return errors.New("MaxMessageSize exceeded")
 		}
 	}
 	if o.validate.version {
-		if !p.validVersion() {
+		if !p.ValidVersion() {
 			return errors.New("invalid payload version")
 		}
 	}
 	if o.validate.expiration {
-		if p.isExpired(o.validate.referenceTime) {
+		if p.IsExpired(o.validate.referenceTime) {
 			return errors.New("payload ttl is expired")
 		}
 	}
 	if o.validate.ttl {
-		if p.validTTL() {
+		if !p.ValidTTL() {
 			return errors.New("invalid payload ttl")
 		}
 	}
 	if o.validate.futureTime {
-		if p.isInFuture(o.validate.referenceTime) {
+		if p.IsInFuture(o.validate.referenceTime) {
 			return errors.New("payload timestamp is too far in the future")
 		}
 	}
 	if o.validate.submitTime {
-		if !p.withinSubmitWindow(o.validate.referenceTime) {
+		if !p.WithinSubmitWindow(o.validate.referenceTime) {
 			return errors.New("timestamp is outside of submit window")
 		}
 	}
 	return nil
 }
 
-// validEndpoint takes a string and attempts to match the URL safe
+// ValidEndpoint takes a string and attempts to match the URL safe
 // base64 string encoded PubKeyHash and returns a boolean
-func (p Payload) validEndpoint(e string) bool {
+func (p Payload) ValidEndpoint(e string) bool {
 	return e == p.Endpoint()
 }
 
-// validTTL checks that a TTL falls within an acceptable range.
-func (p Payload) validTTL() bool {
-	return p.TTL < MinTTL || p.TTL > MaxTTL
+// ValidTTL checks that a TTL falls within an acceptable range.
+func (p Payload) ValidTTL() bool {
+	return !(p.TTL < MinTTL || p.TTL > MaxTTL)
 }
 
-// isExpired checks the reference time t against the timestamp and
+// IsExpired checks the reference time t against the timestamp and
 // TTL of a payload and returns a boolean value on whether
 // or not the TTL has been exceeded
-func (p Payload) isExpired(t time.Time) bool {
+func (p Payload) IsExpired(t time.Time) bool {
 	return t.Sub(p.Timestamp) > p.TTL
 }
 
-// isInFuture checks if the payload timestamp is too far into the future based
+// IsInFuture checks if the payload timestamp is too far into the future based
 // on the reference time t plus the MaxSubmitWindow.
-func (p Payload) isInFuture(t time.Time) bool {
+func (p Payload) IsInFuture(t time.Time) bool {
 	return p.Timestamp.UnixNano() > t.Add(MaxSubmitWindow).UnixNano()
 }
 
-// validVersion returns whether version is supported by Hashmap
+// ValidVersion returns whether version is supported by Hashmap
 // Currently only V1 is supported.
-func (p Payload) validVersion() bool {
+func (p Payload) ValidVersion() bool {
 	switch p.Version {
 	case V1:
 		return true
@@ -217,15 +217,15 @@ func (p Payload) validVersion() bool {
 	return false
 }
 
-// validDataSize checks that the length of Payload.Data is less than or equal
+// ValidDataSize checks that the length of Payload.Data is less than or equal
 // to the MaxMessageSize and returns a boolean value.
-func (p Payload) validDataSize() bool {
+func (p Payload) ValidDataSize() bool {
 	return len(p.Data) <= MaxMessageSize
 }
 
-// validPayloadSize checks that the wire protocol bytes are less than or equal
+// ValidPayloadSize checks that the wire protocol bytes are less than or equal
 // to the MaxPayloadSize allowed and returns a boolean value.
-func (p Payload) validPayloadSize() bool {
+func (p Payload) ValidPayloadSize() bool {
 	b, err := Marshal(p)
 	if err != nil {
 		return false
@@ -236,9 +236,9 @@ func (p Payload) validPayloadSize() bool {
 	return true
 }
 
-// withinSubmitWindow checks reference time t against the payload timestamp,
+// WithinSubmitWindow checks reference time t against the payload timestamp,
 // validates that it exists within the MaxSubmitWindow and returns a boolean.
-func (p Payload) withinSubmitWindow(t time.Time) bool {
+func (p Payload) WithinSubmitWindow(t time.Time) bool {
 	diff := t.Sub(p.Timestamp)
 
 	// get absolute value of time difference
@@ -248,13 +248,8 @@ func (p Payload) withinSubmitWindow(t time.Time) bool {
 	return diff <= MaxSubmitWindow
 }
 
-// verifySignatures checks all signatures in the sigBundles. If all signatures
+// VerifySignatures checks all signatures in the sigBundles. If all signatures
 // are valid, it returns `true`.
-func (p Payload) verifySignatures() bool {
-	for _, bundle := range p.SigBundles {
-		if ok := sig.Verify(p.SigningBytes(), bundle); !ok {
-			return false
-		}
-	}
-	return true
+func (p Payload) VerifySignatures() bool {
+	return sigutil.VerifyAll(p.SigningBytes(), p.SigBundles)
 }

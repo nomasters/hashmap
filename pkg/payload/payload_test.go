@@ -59,7 +59,8 @@ func TestGenerate(t *testing.T) {
 		}
 	})
 	t.Run("Malformed Signer", func(t *testing.T) {
-		s := append(signers, sig.NaClSign{PrivateKey: &[64]byte{}})
+		bad := &sig.NaClSign{PrivateKey: [64]byte{}}
+		s := append(signers, bad)
 		if _, err := Generate(m, s); err == nil {
 			t.Error("should reject a malformed signer")
 		}
@@ -81,11 +82,12 @@ func TestPayloadCoreMethods(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		var naclSigns []sig.NaClSign
+		var naclSigns []*sig.NaClSign
 		var refConcat []byte
 		naclSigns = append(naclSigns, sig1, sig2, sig3)
 		for _, s := range naclSigns {
-			refConcat = append(refConcat, s.PrivateKey[32:]...)
+			pubkeyBytes := s.PrivateKey[32:]
+			refConcat = append(refConcat, pubkeyBytes...)
 		}
 		if !bytes.Equal(refConcat, p.PubKeyBytes()) {
 			t.Error("concatenated pubkey bytes are invalid")

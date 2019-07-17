@@ -4,7 +4,6 @@ package payload
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"time"
@@ -13,7 +12,7 @@ import (
 	ptypes "github.com/golang/protobuf/ptypes"
 	pb "github.com/nomasters/hashmap/pkg/payload/pb"
 	sig "github.com/nomasters/hashmap/pkg/sig"
-	blake2b "golang.org/x/crypto/blake2b"
+	sigutil "github.com/nomasters/hashmap/pkg/sig/sigutil"
 )
 
 // Version type is used for setting the hashmap implementation version.
@@ -192,13 +191,9 @@ func Generate(message []byte, signers []sig.Signer, opts ...Option) (Payload, er
 		Data:      message,
 	}
 
-	var sigBundles []sig.Bundle
-	for _, s := range signers {
-		b, err := s.Sign(p.SigningBytes())
-		if err != nil {
-			return Payload{}, err
-		}
-		sigBundles = append(sigBundles, b)
+	sigBundles, err := sigutil.SignAll(p.SigningBytes(), signers)
+	if err != nil {
+		return Payload{}, err
 	}
 	p.SigBundles = sigBundles
 
@@ -222,22 +217,17 @@ func (p Payload) SigningBytes() []byte {
 // order of the slice of sig.Bundles. This is intended to be used with a hash
 // function to derive the unique endpoint for a payload on hashmap server.
 func (p Payload) PubKeyBytes() []byte {
-	var o []byte
-	for _, b := range p.SigBundles {
-		o = append(o, b.Pub...)
-	}
-	return o
+	return sigutil.BundlePubKeys(p.SigBundles)
 }
 
 // PubKeyHash returns a byte slice of the blake2b-512 hash of PubKeyBytes
 func (p Payload) PubKeyHash() []byte {
-	b := blake2b.Sum512(p.PubKeyBytes())
-	return b[:]
+	return sigutil.BundleHash(p.SigBundles)
 }
 
 // Endpoint returns a url-safe base64 encoded endpoint string of PubKeyHash
 func (p Payload) Endpoint() string {
-	return base64.URLEncoding.EncodeToString(p.PubKeyHash())
+	return sigutil.EncodedBundleHash(p.SigBundles)
 }
 
 // uint64ToBytes converts uint64 numbers into a byte slice in Big Endian format

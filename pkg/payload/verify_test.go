@@ -52,7 +52,7 @@ func TestPayloadMethods(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if p.validPayloadSize() {
+		if p.ValidPayloadSize() {
 			t.Error("failed to catch marshalling error")
 		}
 	})
@@ -61,10 +61,10 @@ func TestPayloadMethods(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if !p.withinSubmitWindow(now.Add(-3 * time.Second)) {
+		if !p.WithinSubmitWindow(now.Add(-3 * time.Second)) {
 			t.Fail()
 		}
-		if p.withinSubmitWindow(now.Add(-10 * time.Second)) {
+		if p.WithinSubmitWindow(now.Add(-10 * time.Second)) {
 			t.Fail()
 		}
 	})
