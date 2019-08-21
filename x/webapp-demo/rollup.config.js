@@ -16,10 +16,7 @@ export default {
     postcss({
       extensions: [".css"]
     }),
-    svelte({
-      dev: false
-      //   css: css => css.write("public/assets/bundle.css")
-    }),
+    svelte({ dev: false }),
     resolve({
       browser: true,
       dedupe: importee =>

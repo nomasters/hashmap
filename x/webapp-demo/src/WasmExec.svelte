@@ -11,7 +11,10 @@
 
   const go = new Go();
   let mod, inst;
-  WebAssembly.instantiateStreaming(fetch("hashmap.wasm"), go.importObject)
+  WebAssembly.instantiateStreaming(
+    fetch("assets/hashmap.wasm"),
+    go.importObject
+  )
     .then(result => {
       mod = result.module;
       inst = result.instance;
@@ -29,7 +32,7 @@
 </script>
 
 <div>
-  <button class="button button-outline" on:click={run} id="runButton">
+  <button class="button button-outline" on:click={run} id="runButton" disabled>
     Outlined Button
   </button>
 </div>
