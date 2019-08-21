@@ -17,8 +17,14 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"encoding/json"
+	"log"
+	"os"
 
 	"github.com/spf13/cobra"
+
+	analyze "github.com/nomasters/hashmap/internal/analyze"
 )
 
 // analyzePayloadCmd represents the analyzePayload command
@@ -32,7 +38,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("analyzePayload called")
+		b, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		p , err := analyze.NewPayload(b)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		output, err := json.Marshal(p)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Printf("%s\n",output)
+
 	},
 }
 

@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 
-	blake2b "golang.org/x/crypto/blake2b"
 	sig "github.com/nomasters/hashmap/pkg/sig"
+	blake2b "golang.org/x/crypto/blake2b"
 )
 
 func init() {
@@ -46,7 +46,7 @@ func Decode(b []byte) (s []sig.Signer, err error) {
 // SignAll is a helper function for quickly signing a byteslice with a group
 // of signers. It takes a slice of sig.Signers and the bytes for signing and
 // returns a slice of sig.Bundles and an error
-func SignAll(message []byte, signers []sig.Signer) ([]sig.Bundle, error){
+func SignAll(message []byte, signers []sig.Signer) ([]sig.Bundle, error) {
 	var sigBundles []sig.Bundle
 	for _, s := range signers {
 		bundle, err := s.Sign(message)

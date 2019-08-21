@@ -6,7 +6,6 @@ import (
 	// sig "github.com/nomasters/hashmap/pkg/sig"
 )
 
-
 func TestEncodeDecode(t *testing.T) {
 	t.Parallel()
 
