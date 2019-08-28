@@ -16,6 +16,9 @@
 <WasmExec />
 
 <h1>Hello {name}!</h1>
+<code>hello, world</code>
+
+<pre>hello, world</pre>
 
 <Router {url}>
   <nav>

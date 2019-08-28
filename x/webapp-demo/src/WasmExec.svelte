@@ -1,5 +1,4 @@
 <script>
-  import "./wasm_exec.js";
 
   if (!WebAssembly.instantiateStreaming) {
     // polyfill
