@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -8,11 +9,9 @@ import (
 	"github.com/rakyll/statik/fs"
 )
 
-
 // TODO:
 // move assets to /assets
 // / or /:hash should resolve to /index.html /assets should resolve assets
-
 
 // Before buildling, run go generate.
 // Then, run the main program and visit http://localhost:8080/public/hello.txt
@@ -22,6 +21,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	fmt.Println("hello, world")
+
 	http.Handle("/", http.StripPrefix("/", http.FileServer(statikFS)))
 	http.ListenAndServe(":8080", nil)
+
 }
