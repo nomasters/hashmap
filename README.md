@@ -15,9 +15,11 @@ hashmap server is a light-weight cryptographically signed public key value store
 
 ## Summary
 
+NOTE: this repo is in the midst of a large refactor for the next alpha version, the stable initial version can be found in (v0.0.4 here)[https://github.com/nomasters/hashmap/tree/v0.0.4]
+
 The goal of `hashmap` is to serve as a key-value store for cryptographically signed payloads namespaced by the hash of the public key used to verify the signature. This allows for:
 
-- a unique pubkey hash name spacing (one `ed25519` key pair per key-value entry) 
+- a unique pubkey hash name spacing (one `ed25519` key pair per key-value entry)
 - only the private key holder can update its corresponding public key hash endpoint
 - the validity of the endpoint and the response authenticity are verifiable by all parties
 
@@ -25,14 +27,14 @@ The design goals were to allow a submitter to randomly generate `ed25519` keys t
 
 A tool like `hashmap` is useful as a light-weight and mobile device friendly mutable storage endpoint. This tool is heavily inspired by IPNS, the mutable store used by the IPFS project to point to specific IPFS hashes.
 
-One benefit of `hashmap` being decoupled from IPFS specifically is that its `message` store supports client-side encryption and therefore, a submitter who obfuscates the source IP through an anomemity  network like TOR and encrypts its `message` client-side can can publicly store mutable data without the `hashmap` server having knowledge or origin of the submission nor contents of the message.
+One benefit of `hashmap` being decoupled from IPFS specifically is that its `message` store supports client-side encryption and therefore, a submitter who obfuscates the source IP through an anomemity network like TOR and encrypts its `message` client-side can can publicly store mutable data without the `hashmap` server having knowledge or origin of the submission nor contents of the message.
 
 features:
 
 - endpoints are hashed using the multi-hash format and default to `blake2b-256` hashes
 - signed data uses nacl sign which leverages `ed25519`
 - signed payload submission and acceptance are strictly enforced based on signature validity, message size, and date-stamp accuracy
-- values stored in hashmap have a max time-to-live of 1 week and default to 24 hours. 
+- values stored in hashmap have a max time-to-live of 1 week and default to 24 hours.
 
 The structure of a properly formatted payload submission is a follows:
 
@@ -97,15 +99,11 @@ This means that any requestor can independently verify that:
 - the TTL has not expired
 - the pubkey multihash matches the pubkey contained in the payload
 
-
-
 ## Notes
 
 This is a very early and incomplete prototype of the `hashmap` server and basic tools. Currently the backing store defaults to a simple in-memory store but redis is also supported. This code needs test coverage and possibly some rethinking on some of the structures, but this is working as an MVP.
 
-
 ## Basic instructions
-
 
 While in development, the easiest way to run the `hashmap` CLI tool is to run
 
@@ -126,6 +124,7 @@ You can test sending a properly formatted json payload by using curl (read below
 ```bash
 curl -X POST http://localhost:3000 -d @payload.json
 ```
+
 This will respond with a multihash base58 encoded pubkey hash
 
 You can use this hash to query hashmap like this:
@@ -135,7 +134,6 @@ You can use this hash to query hashmap like this:
 ## Other instructions
 
 Also included in `hashmap` command are tools to make it easier to generate and `ed25519` private key as well as generate a properly formatted payload for submitting to the hashmap server.
-
 
 ## Generating an `ed25519` private key
 
