@@ -1,4 +1,4 @@
-FROM golang:1.12.3
+FROM golang:1.13
 
 ENV GO111MODULE=on
 WORKDIR /go/src/github.com/nomasters/hashmap

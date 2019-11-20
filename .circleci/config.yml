@@ -6,14 +6,14 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:1.11.1
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/nomasters/hashmap
     steps:
       - run: sudo apt-get update && sudo apt-get install clang
       - checkout
-      - run: ./scripts/build.sh
-      - run: go test -race -v ./...
-      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      #  ensure the cli tool can build
+      - run: go install
+      - run: go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/... ./internal/...
       - run: bash <(curl -s https://codecov.io/bash)
 workflows:
   version: 2
