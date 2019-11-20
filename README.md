@@ -1,4 +1,4 @@
-![hashmap logo](images/hashmap-logo-neon.png)
+![hashmap logo](images/hashmap-logo-neon.svg)
 
 # hashmap
 
