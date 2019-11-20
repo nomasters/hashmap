@@ -15,5 +15,3 @@ vendor
 node_modules
 
 
-#hashmap specific files
-*.keyset
