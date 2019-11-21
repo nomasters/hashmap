@@ -20,5 +20,8 @@ clean:
 	docker images -aq | xargs -n 1 docker rmi -f
 	docker ps -aq | docker rm -f
 
-coverage:
+coverage-race:
 	go test -race -coverprofile=cp.out -covermode=atomic ./pkg/... ./internal/... && go tool cover -html=cp.out
+
+coverage:
+	go test -coverprofile=cp.out ./pkg/... ./internal/... && go tool cover -html=cp.out
