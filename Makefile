@@ -14,8 +14,8 @@ build:
 	docker build --tag $(PROJECT) .
 
 shell:
-	docker run -it $(PROJECT) /bin/bash
+	docker run -it $(PROJECT) /bin/sh
 
 clean:
 	docker images -aq | xargs -n 1 docker rmi -f
-	docker ps -aq | docker rm -f 
+	docker ps -aq | docker rm -f

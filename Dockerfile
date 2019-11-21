@@ -1,12 +1,19 @@
-FROM golang:1.13
+FROM golang:1.13.4-alpine3.10 AS builder
 
-ENV GO111MODULE=on
-WORKDIR /go/src/github.com/nomasters/hashmap
+ARG CGO_ENABLED=0
 
-# copy over files important to the project
-COPY go.mod .
-COPY *.go ./
-COPY hashmap/ hashmap
+RUN apk update && apk add ca-certificates
 
-# install the commandline tools
-RUN go install github.com/nomasters/hashmap/hashmap
+WORKDIR /app
+COPY . .
+
+RUN go install
+
+FROM alpine:3.10
+
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+COPY --from=builder /go/bin/hashmap /usr/bin/hashmap
+RUN addgroup -S hashmap && adduser -S hashmap -G hashmap
+WORKDIR /home/hashmap
+
+USER hashmap
