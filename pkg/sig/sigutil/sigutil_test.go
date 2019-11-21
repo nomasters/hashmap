@@ -3,6 +3,8 @@ package sigutil
 import (
 	"bytes"
 	"testing"
+
+	sig "github.com/nomasters/hashmap/pkg/sig"
 	// sig "github.com/nomasters/hashmap/pkg/sig"
 )
 
@@ -34,5 +36,27 @@ func TestEncodeDecode(t *testing.T) {
 		t.Log("source:  ", sb.Sig)
 		t.Log("decoded: ", ob.Sig)
 		t.Error("Decode signature mismatch")
+	}
+}
+
+func TestSignAll(t *testing.T) {
+	t.Parallel()
+	s := NewDefaultSigners()
+	m := []byte("hello, world")
+	if _, err := SignAll(m, s); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestVerifyAll(t *testing.T) {
+	t.Parallel()
+	s := NewDefaultSigners()
+	m := []byte("hello, world")
+	b, err := s[0].Sign(m)
+	if err != nil {
+		t.Error(err)
+	}
+	if !VerifyAll(m, []sig.Bundle{b}) {
+		t.Error("VerifyAll failed for", b)
 	}
 }
