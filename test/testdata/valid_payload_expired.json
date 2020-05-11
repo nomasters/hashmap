@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "timestamp": "2020-05-11T06:33:54.662306-06:00",
+    "ttl": 5000000000,
+    "sig_bundles": [
+        {
+            "alg": 1,
+            "pub": "RMoWDk+Yei20xNFw+DfFGQbXVd5KTHBhUOz9WSHvCKk=",
+            "sig": "zkUcaHI+Q/JvnyRJdfzV9kgmgkusr7IxyPNhx9LZUMv/6j9hE83ZhlAyGWbfr7lKaPk43JX8a7DN3Ea6A2Y+Dw=="
+        }
+    ],
+    "data": "c2lnbiBtZSwgcGx6Lg=="
+}

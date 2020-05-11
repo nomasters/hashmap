@@ -1,7 +1,6 @@
 package analyze
 
 import (
-	// "time"
 	"encoding/json"
 
 	"io/ioutil"
@@ -14,7 +13,7 @@ func TestNewKeySet(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	k, err := NewKeySet(b);
+	k, err := NewKeySet(b)
 	if err != nil {
 		t.Error(err)
 	}

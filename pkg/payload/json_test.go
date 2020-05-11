@@ -14,7 +14,7 @@ func TestJSONMarshall(t *testing.T) {
 
 	m := []byte("sign me, plz.")
 	s := []sig.Signer{sig.GenNaclSign()}
-	d, err := Generate(m, s)
+	d, err := Generate(m, s, WithTTL(5*time.Second))
 	if err != nil {
 		t.Error(err)
 	}

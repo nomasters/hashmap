@@ -1,13 +1,12 @@
 package analyze
 
 import (
-	// "time"
 	"io/ioutil"
 	"testing"
 )
 
 func TestNewPayload(t *testing.T) {
-	validExpired := "../../test/testdata/valid_payload_expired.protobuf"
+	validExpired := "../../test/testdata/valid_payload_expired.json"
 	protoBytes, err := ioutil.ReadFile(validExpired)
 	if err != nil {
 		t.Error(err)
