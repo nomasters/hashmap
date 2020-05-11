@@ -10,7 +10,7 @@ import (
 // XMSS10 holds a pointer to a 132 byte array used by XMSS. It implements the
 // Signer interface.
 type XMSS10 struct {
-	m sync.RWMutex
+	m          sync.RWMutex
 	PrivateKey [132]byte
 }
 
@@ -45,7 +45,7 @@ func (s *XMSS10) Sign(message []byte) (Bundle, error) {
 	b := Bundle{
 		Alg: AlgXMSS10,
 		Pub: pub,
-		Sig: sig[:prm.SignBytes()],
+		Sig: Bytes(sig[:prm.SignBytes()]),
 	}
 
 	if ok := VerifyXMSS10(message, b); !ok {
@@ -61,5 +61,5 @@ func VerifyXMSS10(msg []byte, b Bundle) bool {
 	prm := xmss.SHA2_10_256
 	sig := append(b.Sig, msg...)
 	m := make([]byte, prm.SignBytes()+len(msg))
-	return xmss.Verify(prm, m, sig, b.Pub)
+	return xmss.Verify(prm, m, sig, []byte(b.Pub))
 }

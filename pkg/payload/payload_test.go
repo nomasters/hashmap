@@ -2,7 +2,6 @@ package payload
 
 import (
 	"bytes"
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -105,86 +104,6 @@ func TestPayloadCoreMethods(t *testing.T) {
 		b := blake2b.Sum512(sig1.PrivateKey[32:])
 		if !bytes.Equal(b[:], p.PubKeyHash()) {
 			t.Error("pubkey hash bytes are invalid")
-		}
-	})
-}
-
-func TestMarshal(t *testing.T) {
-	t.Parallel()
-	var signers []sig.Signer
-	signers = append(signers, sig.GenNaclSign())
-	message := []byte("hello, world")
-
-	t.Run("Normal Operation", func(t *testing.T) {
-		p, err := Generate(message, signers)
-		if err != nil {
-			t.Error(err)
-		}
-		if _, err := Marshal(p); err != nil {
-			t.Error(err)
-		}
-	})
-
-	t.Run("Invalid Timestamp", func(t *testing.T) {
-		bad := time.Unix(-99999999999, 0)
-		p, err := Generate(message, signers, WithTimestamp(bad))
-		if err != nil {
-			t.Error(err)
-		}
-		if _, err := Marshal(p); err == nil {
-			t.Error("failed to catch invalid timestamp")
-		}
-	})
-
-}
-
-func TestUnmarshal(t *testing.T) {
-	t.Parallel()
-	t.Run("Normal Operation", func(t *testing.T) {
-		var signers []sig.Signer
-		signers = append(signers, sig.GenNaclSign())
-		message := []byte("hello, world")
-		p, err := Generate(message, signers)
-		if err != nil {
-			t.Error(err)
-		}
-		encoded, err := Marshal(p)
-		if err != nil {
-			t.Error(err)
-		}
-		if _, err := Unmarshal(encoded); err != nil {
-			t.Error(err)
-		}
-	})
-	t.Run("invalid protobuf", func(t *testing.T) {
-		invalidPayload, _ := hex.DecodeString("ffffffffffffff")
-		// this is a valid payload protobuf with a malformed (by hand) timestamp to force out of range errors
-		badTimestamp, _ := hex.DecodeString("12070880cdfdffaf071a080880aef188221001")
-		// this is a valid payload protobuf with a malformed (by hand) ttl to force out of range errors
-		badTTL, _ := hex.DecodeString("12070880cdfdefaf071a0808fffffff8221001")
-
-		testTable := []struct {
-			bytes []byte
-			err   string
-		}{
-			{
-				bytes: invalidPayload,
-				err:   "failed to catch malformed payload bytes",
-			},
-			{
-				bytes: badTimestamp,
-				err:   "failed to catch malformed timestamp",
-			},
-			{
-				bytes: badTTL,
-				err:   "failed to catch malformed ttl",
-			},
-		}
-
-		for _, test := range testTable {
-			if _, err := Unmarshal(test.bytes); err == nil {
-				t.Error(test.err)
-			}
 		}
 	})
 }

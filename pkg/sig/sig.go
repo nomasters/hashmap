@@ -1,7 +1,10 @@
 package sig
 
 // Alg type is used for setting the Algorithm in a Signature Set
-type Alg int32
+type Alg uint16
+
+// Bytes is a byte slice with special json encoding properties
+type Bytes []byte
 
 const (
 	// 0 value skipped to handle empty Payload validation
@@ -15,9 +18,9 @@ const (
 // Bundle is used to encapsulate an Algorithm implementation, A Public Key, and a Signature.
 // A Bundle is designed to be used to verify the integrity of the Payload.
 type Bundle struct {
-	Alg Alg
-	Pub []byte
-	Sig []byte
+	Alg Alg   `json:"alg"`
+	Pub Bytes `json:"pub"`
+	Sig Bytes `json:"sig"`
 }
 
 // Signer is an interface for signing messages and generating a SigSet.
