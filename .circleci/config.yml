@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:1.13
+      - image: circleci/golang:1.20
     working_directory: /go/src/github.com/nomasters/hashmap
     steps:
       - run: sudo apt-get update && sudo apt-get install clang

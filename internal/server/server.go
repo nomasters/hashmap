@@ -12,8 +12,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/nomasters/hashmap/internal/storage"
 	"github.com/nomasters/hashmap/pkg/payload"
@@ -204,10 +204,10 @@ func newCors(headers, origins []string) *cors.Cors {
 // parseOptions takes a arbitrary number of Option funcs and returns an options struct
 func parseOptions(opts ...Option) (o options) {
 	o = options{
-		port:    defaultPort,
-		timeout: defaultTimeout,
-		limit:   defaultThrottleLimit,
-		backlog: defaultThrottleBacklog,
+		port:      defaultPort,
+		timeout:   defaultTimeout,
+		limit:     defaultThrottleLimit,
+		backlog:   defaultThrottleBacklog,
 		baseRoute: "/",
 	}
 	for _, option := range opts {

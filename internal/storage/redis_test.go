@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis"
+	miniredis "github.com/alicebob/miniredis/v2"
 )
 
 func TestRedisStore(t *testing.T) {
